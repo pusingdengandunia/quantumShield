@@ -1,0 +1,8 @@
+# Dummy server for the lab: classic algorithms only, and nobody can log in.
+HostKey /etc/ssh/ssh_host_ecdsa_key
+KexAlgorithms curve25519-sha256,ecdh-sha2-nistp256
+PasswordAuthentication no
+PubkeyAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+AllowUsers nobody-can-log-in

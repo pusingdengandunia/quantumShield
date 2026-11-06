@@ -1,0 +1,7 @@
+[
+  {"name": "Portal Internal", "kind": "tls", "host": "portal", "port": 443, "sensitivity": "rahasia", "exposure": "antar-satuan", "migration": "gateway"},
+  {"name": "API Logistik Lama", "kind": "tls", "host": "legacy-api", "port": 443, "sensitivity": "internal", "exposure": "antar-satuan", "migration": "legacy"},
+  {"name": "Server Admin SSH", "kind": "ssh", "host": "ssh-admin", "port": 22, "sensitivity": "rahasia", "exposure": "lan", "migration": "update"},
+  {"name": "Repo Aplikasi Satuan", "kind": "repo", "path": "/scan/repo-dummy", "sensitivity": "internal", "exposure": "lan", "migration": "update"},
+  {"name": "Layanan PQ-Ready", "kind": "tls", "host": "pq-ready", "port": 443, "sensitivity": "rahasia", "exposure": "internet", "migration": "gateway"}
+]

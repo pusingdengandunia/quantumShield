@@ -1,0 +1,3 @@
+# Dummy configuration: the Q-Shield code scanner should flag these lines.
+HostKey /etc/ssh/ssh_host_rsa_key
+KexAlgorithms curve25519-sha256

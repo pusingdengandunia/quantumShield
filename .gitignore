@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+temp/
+*.db
+!demo/qshield.db
+*.pem
+*.key
+.env

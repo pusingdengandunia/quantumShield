@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kartika Q-Shield</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>Kartika Q-Shield</h1>
+      <p class="muted" id="scanned-at">Belum ada scan</p>
+    </div>
+    <div class="actions">
+      <a class="button" href="api/cbom" download>Ekspor CBOM</a>
+      <a class="button" href="api/report.pdf" download>Laporan PDF</a>
+      <button class="button primary" id="scan-button" type="button">Jalankan scan</button>
+    </div>
+  </header>
+
+  <main>
+    <p class="banner" id="readonly-banner" hidden>Mode demo baca-saja. Data berasal dari lab tiruan. Untuk mencoba scan, jalankan <code>docker compose up</code>.</p>
+    <p class="banner error" id="error" role="alert" hidden></p>
+
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-score">
+        <h2 id="hero-title">Skor kesiapan kuantum satuan</h2>
+        <p class="score"><span id="score">–</span><span class="score-max"> / 100</span></p>
+        <p class="delta" id="delta"></p>
+        <p id="summary"></p>
+      </div>
+      <figure class="trend" id="trend-figure" hidden>
+        <figcaption>Tren skor per scan</figcaption>
+        <div class="trend-plot" id="trend"></div>
+      </figure>
+    </section>
+
+    <section class="kpis" aria-label="Ringkasan" id="kpis"></section>
+
+    <section>
+      <h2>Aset berdasarkan risiko</h2>
+      <p class="muted">Pilih aset untuk melihat alasan skor, temuan, dan tindakan.</p>
+      <div class="table-wrap"><table id="assets">
+        <thead><tr><th>Aset</th><th>Jenis</th><th>Key exchange</th><th class="risk-col">Risiko (0–100)</th><th>Status</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section>
+      <h2>Roadmap migrasi</h2>
+      <div class="table-wrap"><table id="roadmap">
+        <thead><tr><th>Fase</th><th>Aset</th><th>Tindakan</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section class="manage" id="manage">
+      <div>
+        <h2>Daftarkan target</h2>
+        <form id="target-form">
+          <label>Nama <input name="name" required maxlength="80"></label>
+          <label>Jenis
+            <select name="kind"><option value="tls">Layanan TLS/HTTPS</option><option value="ssh">Server SSH</option><option value="repo">Repo/folder kode</option></select>
+          </label>
+          <label data-for="network">Host <input name="host" placeholder="portal"></label>
+          <label data-for="network">Port <input name="port" type="number" min="1" max="65535" value="443"></label>
+          <label data-for="repo" hidden>Path <input name="path" placeholder="/scan/repo-dummy"></label>
+          <label>Sensitivitas data <select name="sensitivity"></select></label>
+          <label>Eksposur <select name="exposure"></select></label>
+          <label>Migrasi <select name="migration"></select></label>
+          <label class="check"><input type="checkbox" name="authorized"> Saya berwenang memindai target ini.</label>
+          <button class="button primary" type="submit">Tambah ke allowlist</button>
+        </form>
+      </div>
+      <div>
+        <h2>Allowlist</h2>
+        <ul class="targets" id="targets"></ul>
+        <h2>Pengaturan skor</h2>
+        <form id="settings-form">
+          <div class="weights">
+            <label>Bobot A <input name="wA" type="number" step="0.05" min="0" max="1" required></label>
+            <label>Bobot S <input name="wS" type="number" step="0.05" min="0" max="1" required></label>
+            <label>Bobot E <input name="wE" type="number" step="0.05" min="0" max="1" required></label>
+            <label>Bobot M <input name="wM" type="number" step="0.05" min="0" max="1" required></label>
+          </div>
+          <label>Tahun komputer kuantum relevan (Z) <input name="quantum_year" type="number" min="2026" max="2100" required></label>
+          <p class="field-title">Masa data harus rahasia (X, tahun)</p>
+          <div class="weights three">
+            <label>Rahasia <input name="x_rahasia" type="number" min="0" max="100" required></label>
+            <label>Internal <input name="x_internal" type="number" min="0" max="100" required></label>
+            <label>Publik <input name="x_publik" type="number" min="0" max="100" required></label>
+          </div>
+          <p class="field-title">Lama migrasi (Y, tahun)</p>
+          <div class="weights three">
+            <label>Gateway <input name="y_gateway" type="number" min="0" max="100" required></label>
+            <label>Update <input name="y_update" type="number" min="0" max="100" required></label>
+            <label>Legacy <input name="y_legacy" type="number" min="0" max="100" required></label>
+          </div>
+          <label>Sumber nilai X dan Y <input name="mosca_source" maxlength="200" placeholder="Kosong berarti asumsi awal"></label>
+          <button class="button" type="submit">Simpan</button>
+          <p class="muted">Berlaku pada scan berikutnya.</p>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

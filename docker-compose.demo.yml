@@ -1,0 +1,13 @@
+# Public demo for the judges: read-only dashboard over a stored scan of the lab.
+# It cannot scan or change anything, so it is safe to expose:
+#   docker compose -f docker-compose.demo.yml up -d --build
+services:
+  qshield-demo:
+    build: .
+    restart: unless-stopped
+    environment:
+      QSHIELD_READ_ONLY: "1"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./demo:/data

@@ -1,0 +1,71 @@
+# Lab "Satuan Kartika-01": every service is a local dummy. Ports bind to 127.0.0.1 only,
+# because the lab is deliberately weak and the app can scan the internal network.
+services:
+  qshield:
+    build: .
+    restart: on-failure
+    environment:
+      # Public targets are allowed; each one still needs the operator's scan confirmation.
+      QSHIELD_ALLOW_PUBLIC: "1"
+      QSHIELD_REPO_ROOT: /scan
+      QSHIELD_GATEWAY_CONF: /gateway-conf
+      QSHIELD_GATEWAY_HOST: gateway
+      QSHIELD_SEED: /app/lab/targets.json
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - qshield-data:/data
+      - gateway-conf:/gateway-conf
+      - repo-dummy:/scan/repo-dummy:ro
+    depends_on:
+      gateway:
+        condition: service_healthy
+      repo-dummy:
+        condition: service_completed_successfully
+      portal:
+        condition: service_started
+      legacy-api:
+        condition: service_started
+      pq-ready:
+        condition: service_started
+      ssh-admin:
+        condition: service_started
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "127.0.0.1:9443-9452:9443-9452"
+    volumes:
+      - gateway-conf:/gateway-conf
+    healthcheck:
+      test: ["CMD", "pgrep", "nginx"]
+      interval: 2s
+      retries: 15
+
+  portal:
+    build: ./lab/tls
+    environment:
+      MODE: classic
+
+  legacy-api:
+    build: ./lab/tls
+    environment:
+      MODE: legacy
+
+  pq-ready:
+    build: ./lab/tls
+    environment:
+      MODE: hybrid
+
+  ssh-admin:
+    build: ./lab/ssh
+
+  repo-dummy:
+    build: ./lab/repo-dummy
+    volumes:
+      - repo-dummy:/out
+
+volumes:
+  qshield-data:
+  gateway-conf:
+  repo-dummy:
