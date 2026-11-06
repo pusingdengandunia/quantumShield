@@ -1,4 +1,4 @@
-# Kartika Q-Shield
+# QShield
 
 Platform kesiapan kuantum untuk satuan TNI AD. Q-Shield memindai aset, memetakan kriptografi yang rentan terhadap komputer kuantum, memberi skor risiko, lalu memasang proteksi hybrid post-quantum lewat gateway tanpa mengubah aplikasi lama.
 
