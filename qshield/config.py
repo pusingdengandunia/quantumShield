@@ -47,6 +47,16 @@ def openssl_bin() -> str:
     return os.environ.get("QSHIELD_OPENSSL", "openssl")
 
 
+def ca_bundle() -> Path:
+    return Path(os.environ.get("QSHIELD_CA_BUNDLE", "/etc/ssl/certs/ca-certificates.crt"))
+
+
+def extra_ca() -> Path | None:
+    """Internal CA certificates to trust on top of the public bundle."""
+    value = os.environ.get("QSHIELD_EXTRA_CA")
+    return Path(value) if value else None
+
+
 def seed_file() -> Path | None:
     value = os.environ.get("QSHIELD_SEED")
     return Path(value) if value else None

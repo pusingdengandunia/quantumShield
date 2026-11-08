@@ -5,12 +5,12 @@ from __future__ import annotations
 import re
 import socket
 import subprocess
+import tempfile
 import time
-
-from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed448, ed25519, rsa
+from pathlib import Path
 
 from .. import config
+from . import pki
 
 HYBRID_GROUP = "X25519MLKEM768"
 CLASSIC_GROUP = "X25519"
@@ -19,7 +19,6 @@ _CIPHER_RE = re.compile(r"Cipher is (\S+)")
 _GROUP_RE = re.compile(r"Negotiated TLS1\.3 group: (\S+)")
 _TEMP_KEY_RE = re.compile(r"(?:Server|Peer) Temp Key: ([^,\n]+)(?:, ([^,\n]+))?, (\d+) bits")
 _BYTES_RE = re.compile(r"handshake has read (\d+) bytes and written (\d+) bytes")
-_PEM_RE = re.compile(r"-----BEGIN CERTIFICATE-----.+?-----END CERTIFICATE-----", re.S)
 _SAFE_GROUPS = {"X25519MLKEM768", "SecP256r1MLKEM768", "SecP384r1MLKEM1024", "MLKEM512", "MLKEM768", "MLKEM1024"}
 
 
@@ -96,30 +95,17 @@ def _kex_item(output: str, cipher: str, version: str) -> dict:
             "param": name}
 
 
-def describe_certificate(pem: str) -> dict:
-    cert = x509.load_pem_x509_certificate(pem.encode())
-    key = cert.public_key()
-    if isinstance(key, rsa.RSAPublicKey):
-        algorithm, size = "RSA", key.key_size
-    elif isinstance(key, ec.EllipticCurvePublicKey):
-        algorithm, size = f"ECDSA-{key.curve.name}", key.key_size
-    elif isinstance(key, ed25519.Ed25519PublicKey):
-        algorithm, size = "Ed25519", 255
-    elif isinstance(key, ed448.Ed448PublicKey):
-        algorithm, size = "Ed448", 448
-    elif isinstance(key, dsa.DSAPublicKey):
-        algorithm, size = "DSA", key.key_size
-    else:
-        algorithm, size = cert.public_key_algorithm_oid.dotted_string, 0
-    return {
-        "algorithm": algorithm,
-        "size": size,
-        "subject": cert.subject.rfc4514_string(),
-        "issuer": cert.issuer.rfc4514_string(),
-        "not_before": cert.not_valid_before_utc.isoformat(),
-        "not_after": cert.not_valid_after_utc.isoformat(),
-        "signature": cert.signature_algorithm_oid._name,
-    }
+def _trust_flags() -> tuple[str, ...]:
+    """CA flags for s_client: the public bundle plus any internal CA."""
+    bundle, extra = config.ca_bundle(), config.extra_ca()
+    sources = [path for path in (bundle, extra) if path and path.is_file()]
+    if not sources:
+        return ()
+    if len(sources) == 1:
+        return ("-CAfile", str(sources[0]))
+    merged = Path(tempfile.gettempdir()) / "qshield-trust.pem"
+    merged.write_bytes(b"\n".join(path.read_bytes() for path in sources))
+    return ("-CAfile", str(merged))
 
 
 def scan_tls(host: str, port: int) -> dict:
@@ -141,13 +127,15 @@ def scan_tls(host: str, port: int) -> dict:
 
     best = versions[0]
     extra = () if best == "TLSv1.3" else weak_ok
-    output = handshake(host, port, _VERSION_FLAGS[best], *extra)
+    output = handshake(host, port, _VERSION_FLAGS[best], *extra, "-showcerts", *_trust_flags())
     cipher = (_CIPHER_RE.search(output) or [None, "unknown"])[1]
     hybrid = hybrid_handshake(host, port) if best == "TLSv1.3" else False
 
-    items: list[dict] = []
-    findings: list[dict] = []
     location = f"{host}:{port}"
+    audit = pki.analyze(output, host)
+    items: list[dict] = []
+    findings: list[dict] = list(audit["findings"])
+    drivers: list[dict] = list(audit["drivers"])
 
     kex = _kex_item(output, cipher, best)
     if hybrid:
@@ -158,27 +146,24 @@ def scan_tls(host: str, port: int) -> dict:
     if cipher_item:
         items.append({**cipher_item, "location": location})
 
-    cert_info = None
-    pem = _PEM_RE.search(output)
-    if pem:
-        cert_info = describe_certificate(pem.group(0))
-        items.append({"algorithm": cert_info["algorithm"], "primitive": "signature", "role": "auth",
-                      "quantum": "vulnerable", "nist_level": 0, "param": str(cert_info["size"]),
-                      "location": location})
+    leaf = audit["pki"]["chain"][0] if audit["pki"] else None
+    if leaf:
+        items.append({"algorithm": leaf["key_algorithm"], "primitive": "signature", "role": "auth",
+                      "quantum": "safe" if leaf["pqc"] else "vulnerable", "nist_level": leaf["nist_level"],
+                      "param": str(leaf["key_size"] or leaf["key_algorithm"]), "location": location})
 
     if hybrid:
-        findings.append({"severity": "info", "text": f"Handshake hybrid {HYBRID_GROUP} berhasil; aman dari HNDL."})
-        findings.append({"severity": "info", "text": "Sertifikat masih klasik: autentikasi perlu ML-DSA saat CA mendukung."})
+        findings.insert(0, {"severity": "info", "text": f"Handshake hybrid {HYBRID_GROUP} berhasil; aman dari HNDL."})
     else:
-        findings.append({"severity": "critical", "text": f"Key exchange {kex['algorithm']} rentan algoritma Shor; "
-                                                         "trafik bisa disadap sekarang dan didekripsi nanti (HNDL)."})
-    if cert_info and cert_info["algorithm"] == "RSA" and cert_info["size"] < 2048:
-        findings.append({"severity": "critical", "text": f"Sertifikat RSA-{cert_info['size']} lemah bahkan terhadap komputer klasik."})
-    for old in ("TLSv1.0", "TLSv1.1"):
-        if old in versions:
-            findings.append({"severity": "critical", "text": f"{old} masih aktif; protokol ini sudah usang."})
+        findings.insert(0, {"severity": "critical", "text": f"Key exchange {kex['algorithm']} rentan algoritma Shor; "
+                                                            "trafik bisa disadap sekarang dan didekripsi nanti (HNDL)."})
+    legacy = [old for old in ("TLSv1.0", "TLSv1.1") if old in versions]
+    if legacy:
+        drivers.append({"code": "tls_legacy"})
+    for old in legacy:
+        findings.append({"severity": "critical", "text": f"{old} masih aktif; protokol ini sudah usang."})
     if "TLSv1.3" not in versions:
         findings.append({"severity": "warning", "text": "TLS 1.3 tidak didukung; hybrid ML-KEM butuh TLS 1.3."})
 
-    return {"reachable": True, "items": items, "findings": findings, "versions": versions, "cipher": cipher,
-            "hybrid": hybrid, "certificate": cert_info}
+    return {"reachable": True, "items": items, "findings": findings, "drivers": drivers, "versions": versions,
+            "cipher": cipher, "hybrid": hybrid, "pki": audit["pki"]}

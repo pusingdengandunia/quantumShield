@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS targets (
     migration TEXT NOT NULL,
     gateway_port INTEGER,
     gateway_status TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    server TEXT
 );
 CREATE TABLE IF NOT EXISTS scans (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,6 +70,10 @@ def connect():
 def init() -> None:
     with connect() as db:
         db.executescript(_SCHEMA)
+        # Databases created before server grouping lack the column.
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(targets)")}
+        if "server" not in columns:
+            db.execute("ALTER TABLE targets ADD COLUMN server TEXT")
 
 
 def get_settings() -> dict:
@@ -97,8 +102,8 @@ def get_target(target_id: int) -> dict | None:
 def add_target(values: dict) -> int:
     with connect() as db:
         cursor = db.execute(
-            "INSERT INTO targets (name, kind, host, port, path, sensitivity, exposure, migration, created_at) "
-            "VALUES (:name, :kind, :host, :port, :path, :sensitivity, :exposure, :migration, :created_at)",
+            "INSERT INTO targets (name, kind, host, port, path, sensitivity, exposure, migration, server, created_at) "
+            "VALUES (:name, :kind, :host, :port, :path, :sensitivity, :exposure, :migration, :server, :created_at)",
             {**values, "created_at": now()})
         return cursor.lastrowid
 

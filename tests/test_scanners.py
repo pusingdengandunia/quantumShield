@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
-from qshield.scanners import ssh, tls
+from qshield.scanners import pki, ssh, tls
 from qshield.scanners.code import scan_code
 
 
@@ -107,8 +107,9 @@ def test_certificate_description():
     now = datetime.now(timezone.utc)
     cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(key.public_key())
             .serial_number(1).not_valid_before(now).not_valid_after(now + timedelta(days=1)).sign(key, hashes.SHA256()))
-    info = tls.describe_certificate(cert.public_bytes(serialization.Encoding.PEM).decode())
-    assert (info["algorithm"], info["size"], info["subject"]) == ("RSA", 2048, "CN=lab")
+    info = pki.describe_certificate(cert.public_bytes(serialization.Encoding.PEM).decode())
+    assert (info["key_algorithm"], info["key_size"], info["subject"]) == ("RSA", 2048, "CN=lab")
+    assert info["role"] == "leaf" and info["self_signed"] and not info["pqc"]
 
 
 def test_code_scanner_finds_usage_with_location(tmp_path):

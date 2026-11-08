@@ -1,6 +1,6 @@
 # alpine:3.22 ships OpenSSL 3.5, which the scanner needs to probe ML-KEM groups.
 FROM python:3.13-alpine3.22
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl ca-certificates
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

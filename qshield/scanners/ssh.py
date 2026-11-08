@@ -81,5 +81,7 @@ def scan_ssh(host: str, port: int) -> dict:
     else:
         findings.append({"severity": "critical", "text": "Tidak ada key exchange post-quantum; perbarui OpenSSH ke 9.9+ "
                                                          "dan aktifkan mlkem768x25519-sha256."})
-    return {"reachable": True, "items": items, "findings": findings, "banner": banner, "kex": algorithms["kex"],
+    findings.append({"severity": "warning", "text": "Host key SSH masih klasik; autentikasi belum PQC."})
+    return {"reachable": True, "items": items, "findings": findings, "drivers": [{"code": "auth_classic"}],
+            "banner": banner, "kex": algorithms["kex"],
             "host_keys": algorithms["host_keys"], "hybrid": bool(hybrid)}

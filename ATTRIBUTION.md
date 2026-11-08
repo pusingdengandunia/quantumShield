@@ -14,7 +14,7 @@
 | Alpine Linux, Python | Image dasar container | Lisensi masing-masing |
 | pytest, HTTPX, cyclonedx-python-lib | Pengujian dan validasi CBOM | MIT, BSD-3-Clause, Apache-2.0 |
 
-Standar yang dirujuk: NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA), CycloneDX 1.6, teorema Mosca.
+Standar yang dirujuk: NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA), CycloneDX 1.6, teorema Mosca. OID Falcon diambil dari daftar algoritma open-quantum-safe oqs-provider.
 
 Rujukan latar masalah: S. Chawande, "Quantum computing threats to cybersecurity protocols", World Journal of Advanced Engineering Technology and Sciences, 2025, 15(02), 707-720. DOI 10.30574/wjaets.2025.15.2.0546.
 

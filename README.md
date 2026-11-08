@@ -26,9 +26,17 @@ docker compose up -d --build
 Buka http://localhost:8000, lalu:
 
 1. Klik **Jalankan scan**.
-2. Klik **Portal Internal**, lalu **Terapkan PQC Gateway**. Skor satuan naik.
+2. Di tab **Aset**, klik **Portal Internal**, lalu **Terapkan PQC Gateway**. Skor satuan naik.
 3. Klik **Jalankan benchmark** untuk melihat overhead hybrid dibanding klasik.
-4. Unduh **Ekspor CBOM** dan **Laporan PDF**.
+4. Di tab **Ringkasan**, unduh **Ekspor CBOM** dan **Laporan PDF**.
+
+## Memindai server
+
+1. Di tab **Kelola**, pilih Jenis **Server**, isi Host, lalu centang izin. URL yang ditempel otomatis dipecah.
+2. Klik **Deteksi layanan**. Q-Shield hanya mengecek port 443, 8443, 22, 465, 636, 993, dan 995.
+3. Pilih layanan yang ditemukan, lalu klik **Tambahkan dan pindai**.
+
+Hasilnya dikelompokkan per server dan diurutkan menurut prioritas. Port 25 dan 587 tidak ikut karena butuh STARTTLS. Tidak ada scan rentang port bebas.
 
 Untuk mereset lab: `docker compose down -v`.
 
@@ -36,13 +44,14 @@ Untuk mereset lab: `docker compose down -v`.
 
 | Aset | Kondisi | Tujuan demo |
 | --- | --- | --- |
-| Portal Internal | TLS 1.3, RSA-2048, X25519 | Rentan HNDL, bisa pakai gateway |
+| Portal Internal | TLS 1.3, RSA-2048, X25519, port 443 dan 8443 | Rentan HNDL, bisa pakai gateway |
 | API Logistik Lama | TLS 1.2, RSA-1024 | Legacy, masuk roadmap migrasi |
 | Server Admin SSH | OpenSSH, ECDSA, tanpa kex hybrid | Perlu update software |
 | Repo Aplikasi Satuan | Kode RSA/ECC dan private key dummy | Scanner kode dan konfigurasi |
-| Layanan PQ-Ready | TLS 1.3 hybrid | Pembanding yang sudah aman |
+| Layanan PQ-Ready | TLS 1.3 hybrid, sertifikat klasik | Terlindungi sebagian |
+| Layanan PQ-Full | TLS 1.3 hybrid, rantai ML-DSA-65 | Terlindungi penuh |
 
-Semua kunci dibuat saat container start. Tidak ada private key di repository ini.
+Semua kunci dan CA lab dibuat saat container start. Tidak ada private key di repository ini.
 
 ## Arsitektur
 
@@ -55,23 +64,35 @@ Layanan jaringan -------> M1 Network Scanner+                                   
       +------------------------- dipasang di depan layanan ---------------- M5 PQC Gateway
 ```
 
-- **M1 Network Scanner** (`qshield/scanners/tls.py`, `ssh.py`): probe TLS memakai OpenSSL 3.5 agar bisa menguji grup ML-KEM; probe SSH membaca `SSH_MSG_KEXINIT` tanpa login.
+- **M1 Network Scanner** (`qshield/scanners/tls.py`, `ssh.py`, `pki.py`): probe TLS memakai OpenSSL 3.5 agar bisa menguji grup ML-KEM; audit PKI membaca seluruh rantai sertifikat; probe SSH membaca `SSH_MSG_KEXINIT` tanpa login.
 - **M2 Code and Config Scanner** (`qshield/scanners/code.py`): aturan untuk Python, Java, JS/TS, Go, nginx, OpenSSH, dan file private key. Isi kunci tidak pernah disimpan.
 - **M3 CBOM and Risk Engine** (`qshield/risk.py`, `cbom.py`): CBOM CycloneDX 1.6, divalidasi terhadap skema resmi dalam test.
-- **M4 Dashboard dan Laporan** (`qshield/static/`, `report.py`): tanpa CDN, jadi jalan offline.
+- **M4 Dashboard dan Laporan** (`qshield/static/`, `report.py`): tiga tab Ringkasan, Aset, dan Kelola, tanpa CDN, jadi jalan offline.
 - **M5 PQC Gateway** (`gateway/`): nginx + OpenSSL 3.5. Aplikasi hanya menulis file route; watcher di container gateway memvalidasi dengan `nginx -t` lalu reload. Status "aktif" hanya diberikan setelah handshake hybrid nyata berhasil.
 - **M6 Benchmark** (`qshield/gateway.py`): median waktu dan byte handshake, klasik dibanding hybrid.
 
 ## Model risiko
 
 ```
-Risk = 100 x (0.40 A + 0.30 S + 0.20 E + 0.10 M)
-Rentan menurut Mosca jika X + Y > Z
+Konteks = 0.40 + 0.30 S + 0.20 E + 0.10 M
+Risiko  = 100 x A x Konteks
+Rentan menurut Mosca jika kerahasiaan terbuka dan X + Y > Z
 ```
+
+A adalah tingkat keparahan masalah terburuk pada aset. Aset tanpa masalah otomatis berisiko 0.
+
+| Kondisi | A |
+| --- | --- |
+| Key exchange klasik, RSA key transport, atau kode memakai RSA/ECC | 1.0 |
+| Kunci di bawah RSA-2048, atau tanda tangan SHA-1/MD5 pada leaf atau intermediate | 0.9 |
+| TLS 1.0/1.1 aktif, atau sertifikat kedaluwarsa | 0.7 |
+| Rantai tidak tepercaya, atau hostname tidak cocok | 0.5 |
+| AES-128, atau gateway aktif dengan akses langsung masih terbuka | 0.3 |
+| Hybrid, tapi autentikasi masih klasik | 0.2 |
+| Hybrid, autentikasi PQC, tanpa temuan | 0.0 |
 
 | Faktor | Nilai |
 | --- | --- |
-| A algoritma | kex RSA/ECC/DH = 1.0; AES-128 = 0.3; hybrid = 0.0 |
 | S sensitivitas | rahasia = 1.0; internal = 0.5; publik = 0.1 |
 | E eksposur | internet = 1.0; antar-satuan = 0.6; LAN = 0.3 |
 | M migrasi | gateway = 0.4; update = 0.7; legacy = 1.0 |
@@ -79,9 +100,22 @@ Rentan menurut Mosca jika X + Y > Z
 | Y lama migrasi (default) | gateway = 1; update = 2; legacy = 5 tahun |
 | Z | tahun kuantum relevan (default 2030) dikurangi tahun ini |
 
-Aset dengan A = 0 berisiko 0, karena tidak ada kerahasiaan yang rentan. Skor satuan adalah 100 dikurangi rata-rata risiko berbobot sensitivitas.
+| Prioritas | Status | Syarat | Target |
+| --- | --- | --- | --- |
+| P1 | Berisiko Tinggi | Risiko 70 atau lebih | Segera |
+| P2 | Rentan | Selain status lain | 6 bulan |
+| P3 | Terlindungi Sebagian | Key exchange hybrid dan A paling tinggi 0.3 | 12 bulan |
+| P4 | Terlindungi | Risiko 0 | Pantau |
 
-Bobot, X, Y, dan tahun Z bisa diubah di bagian Pengaturan skor, dan berlaku pada scan berikutnya. X dan Y hanya menentukan label rentan Mosca, bukan angka risiko. Nilai default X dan Y adalah asumsi awal, jadi catat sumber nilai pengganti di kolom yang tersedia. Sumber itu ikut tampil di detail aset dan laporan PDF.
+Dalam satu prioritas, urutannya: risiko, rentan Mosca, eksposur, lalu yang termudah dimigrasi. Skor satuan adalah 100 dikurangi rata-rata risiko berbobot sensitivitas. Skor server adalah risiko tertinggi layanannya.
+
+Bobot, X, Y, dan tahun Z bisa diubah di tab Kelola, dan berlaku pada scan berikutnya. X dan Y hanya menentukan label rentan Mosca, bukan angka risiko. Nilai default X dan Y adalah asumsi awal, jadi catat sumber nilai pengganti di kolom yang tersedia. Sumber itu ikut tampil di detail aset dan laporan PDF.
+
+## Audit PKI
+
+`qshield/scanners/pki.py` membaca seluruh rantai yang dikirim server, lalu melaporkan algoritma per sertifikat, status `classic`, `mixed`, atau `pqc`, mata rantai terlemah, kepercayaan rantai, kecocokan hostname, dan masa berlaku. Sertifikat dikenali sebagai PQC dari OID: ML-DSA dan SLH-DSA memakai OID standar NIST, sedangkan Falcon memakai OID oqs-provider.
+
+CA internal didaftarkan lewat `QSHIELD_EXTRA_CA`, supaya rantai internal tidak dianggap tidak tepercaya.
 
 ## Keamanan alat
 
@@ -121,6 +155,8 @@ docker compose cp qshield:/data/qshield.db demo/qshield.db
 | `QSHIELD_GATEWAY_PORT_START` | Port awal gateway; tersedia 10 port |
 | `QSHIELD_OPENSSL` | Lokasi binary OpenSSL 3.5+ |
 | `QSHIELD_SEED` | File JSON target awal |
+| `QSHIELD_CA_BUNDLE` | Daftar CA publik yang dipercaya |
+| `QSHIELD_EXTRA_CA` | File CA internal yang ikut dipercaya |
 
 ## Pengujian
 
@@ -135,7 +171,10 @@ python -m venv .venv
 
 ## Batasan yang diketahui
 
-- Hybrid melindungi kerahasiaan dari HNDL. Sertifikat tetap klasik sampai CA mendukung ML-DSA.
+- Hybrid melindungi kerahasiaan dari HNDL. Sertifikat tetap klasik sampai CA mendukung ML-DSA. Pada pemeriksaan November 2026 belum ditemukan persetujuan CA/Browser Forum untuk ML-DSA di sertifikat TLS publik, jadi situs publik umumnya berhenti di Terlindungi Sebagian.
+- Layanan PQ-Full diuji dengan OpenSSL, belum dengan browser. Browser umum bisa menolak sertifikat ML-DSA.
+- Falcon hanya dikenali lewat tabel OID. OID itu bisa berubah sebelum standar final, dan lab tidak bisa membuat sertifikat Falcon untuk uji end-to-end.
+- Audit PKI hanya melihat sertifikat yang dikirim server. Root yang tidak dikirim tidak diperiksa algoritmanya. OCSP, CRL, dan Certificate Transparency tidak diperiksa.
 - Jalur dari gateway ke layanan asal tetap klasik, jadi keduanya harus berada di segmen tepercaya.
 - Selama akses langsung ke layanan belum ditutup firewall, trafik lewat jalur itu tetap rentan. Dashboard menampilkannya sebagai temuan.
 - Gateway hanya menangani HTTP(S). VPN IPsec, radio taktis, dan HSM di luar lingkup.

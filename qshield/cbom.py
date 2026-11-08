@@ -43,11 +43,13 @@ def build_cbom(results: list[dict]) -> dict:
         for index, item in enumerate(result["items"]):
             reference = f"crypto-{result['target_id']}-{index}"
             components.append(_algorithm_component(reference, item, target))
-        certificate = result["detail"].get("certificate")
-        if certificate:
+        # Results stored before the PKI audit only have the leaf under "certificate".
+        audit = result["detail"].get("pki") or {}
+        chain = audit.get("chain") or [c for c in [result["detail"].get("certificate")] if c]
+        for position, certificate in enumerate(chain):
             components.append({
                 "type": "cryptographic-asset",
-                "bom-ref": f"cert-{result['target_id']}",
+                "bom-ref": f"cert-{result['target_id']}-{position}",
                 "name": certificate["subject"] or target,
                 "cryptoProperties": {
                     "assetType": "certificate",
@@ -59,7 +61,11 @@ def build_cbom(results: list[dict]) -> dict:
                         "certificateFormat": "X.509",
                     },
                 },
-                "properties": [{"name": "qshield:target", "value": target}],
+                "properties": [
+                    {"name": "qshield:target", "value": target},
+                    {"name": "qshield:role", "value": certificate.get("role", "leaf")},
+                    {"name": "qshield:pqc", "value": str(certificate.get("pqc", False)).lower()},
+                ],
             })
     return {
         "bomFormat": "CycloneDX",

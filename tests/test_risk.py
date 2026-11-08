@@ -58,7 +58,40 @@ def test_readiness_ignores_unreachable_assets_and_weights_by_sensitivity():
     assert risk.readiness([rows[2]]) is None
 
 
-def test_roadmap_skips_protected_assets_and_picks_action_by_kind():
-    ssh = {"name": "ssh", "kind": "ssh", "migration": "update"}
-    assert "OpenSSH" in risk.roadmap_entry(ssh, {"reachable": True, "assessment": {"risk": 83.0}})["action"]
-    assert risk.roadmap_entry(ssh, {"reachable": True, "assessment": {"risk": 0.0}}) is None
+def row(priority, risk_value, *codes, kind="ssh", migration="update"):
+    return {"target_name": "aset", "priority": priority, "target": {"kind": kind, "migration": migration},
+            "assessment": {"risk": risk_value, "drivers": [{"code": code} for code in codes]}}
+
+
+def test_roadmap_skips_protected_assets_and_picks_action_by_problem():
+    assert "OpenSSH" in risk.roadmap_entry(row("P1", 83.0, "kex_classic"))["action"]
+    assert risk.roadmap_entry(row("P4", 0.0)) is None
+    assert risk.roadmap_entry(row("-", 0.0)) is None
+    legacy = risk.roadmap_entry(row("P2", 65.8, "tls_legacy", "auth_classic", kind="tls", migration="gateway"))
+    assert "Nonaktifkan TLS 1.0 dan 1.1" in legacy["action"]
+    assert "ML-DSA" in legacy["action"]
+    assert "Gateway" not in legacy["action"], "a hybrid service does not need the gateway"
+
+
+def test_priority_sorting_uses_tie_breakers():
+    def entry(name, priority, risk_value, mosca=False, exposure="lan", migration="update"):
+        return {"target_name": name, "priority": priority, "assessment": {"risk": risk_value, "mosca_vulnerable": mosca},
+                "target": {"exposure": exposure, "migration": migration}}
+
+    rows = [
+        entry("unknown", "-", 0),
+        entry("p2", "P2", 65),
+        entry("p1-low", "P1", 70),
+        entry("p1-high", "P1", 86),
+        entry("tie-plain", "P2", 50),
+        entry("tie-mosca", "P2", 50, mosca=True),
+        entry("tie-internet", "P2", 40, exposure="internet"),
+        entry("tie-gateway", "P2", 40, exposure="internet", migration="gateway"),
+    ]
+    ordered = [r["target_name"] for r in sorted(rows, key=risk.sort_key)]
+    assert ordered == ["p1-high", "p1-low", "p2", "tie-mosca", "tie-plain", "tie-gateway", "tie-internet", "unknown"]
+
+
+def test_every_driver_code_a_scanner_emits_is_known():
+    assert risk.collect_drivers([], [{"code": code} for code in risk.DRIVERS])
+    assert risk.PRIORITY_BY_STATUS.keys() == risk.STATUS_LABELS.keys()

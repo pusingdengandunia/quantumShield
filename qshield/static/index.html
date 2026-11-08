@@ -9,101 +9,153 @@
 </head>
 <body>
   <header class="top">
-    <div>
-      <h1>Kartika Q-Shield</h1>
-      <p class="muted" id="scanned-at">Belum ada scan</p>
-    </div>
-    <div class="actions">
-      <a class="button" href="api/cbom" download>Ekspor CBOM</a>
-      <a class="button" href="api/report.pdf" download>Laporan PDF</a>
+    <div class="top-inner">
+      <div class="brand">
+        <img src="favicon.svg" alt="" width="28" height="28">
+        <div>
+          <h1>Kartika Q-Shield</h1>
+          <p id="scanned-at">Belum ada scan</p>
+        </div>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Bagian dashboard">
+        <button type="button" role="tab" id="tab-ringkasan" aria-controls="panel-ringkasan">Ringkasan</button>
+        <button type="button" role="tab" id="tab-aset" aria-controls="panel-aset">Aset</button>
+        <button type="button" role="tab" id="tab-kelola" aria-controls="panel-kelola">Kelola</button>
+      </nav>
       <button class="button primary" id="scan-button" type="button">Jalankan scan</button>
+    </div>
+    <div class="progress" id="progress" role="status" hidden>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+      <p id="progress-text"></p>
     </div>
   </header>
 
   <main>
     <p class="banner" id="readonly-banner" hidden>Mode demo baca-saja. Data berasal dari lab tiruan. Untuk mencoba scan, jalankan <code>docker compose up</code>.</p>
     <p class="banner error" id="error" role="alert" hidden></p>
+    <p class="banner good" id="notice" role="status" hidden></p>
 
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-score">
-        <h2 id="hero-title">Skor kesiapan kuantum satuan</h2>
-        <p class="score"><span id="score">–</span><span class="score-max"> / 100</span></p>
-        <p class="delta" id="delta"></p>
-        <p id="summary"></p>
+    <div id="panel-ringkasan" role="tabpanel" aria-labelledby="tab-ringkasan" class="panel">
+      <section class="empty" id="empty-state" hidden>
+        <h2>Belum ada hasil scan</h2>
+        <p>Jalankan scan untuk memetakan kriptografi aset, atau daftarkan target dulu di tab Kelola.</p>
+      </section>
+      <div id="summary-content" class="stack">
+        <div class="hero-grid">
+          <section class="card" aria-labelledby="hero-title">
+            <h2 id="hero-title">Skor kesiapan kuantum satuan</h2>
+            <p class="score"><span id="score">–</span><span class="score-max"> / 100</span></p>
+            <p class="delta" id="delta"></p>
+            <div class="status-bar" id="status-bar" role="img"></div>
+            <ul class="legend" id="status-legend"></ul>
+            <p id="summary"></p>
+          </section>
+          <figure class="card trend" id="trend-figure">
+            <figcaption>Tren skor per scan</figcaption>
+            <div class="trend-plot" id="trend"></div>
+          </figure>
+        </div>
+        <div class="kpis" id="kpis"></div>
+        <div class="two-col">
+          <section class="card">
+            <h2>Risiko tertinggi</h2>
+            <ol class="top-list" id="top-risks"></ol>
+          </section>
+          <section class="card">
+            <h2>Tindakan berikutnya</h2>
+            <ol class="top-list" id="next-actions"></ol>
+          </section>
+        </div>
+        <div class="downloads">
+          <a class="button" href="api/cbom" download>Ekspor CBOM</a>
+          <a class="button" href="api/report.pdf" download>Laporan PDF</a>
+        </div>
       </div>
-      <figure class="trend" id="trend-figure" hidden>
-        <figcaption>Tren skor per scan</figcaption>
-        <div class="trend-plot" id="trend"></div>
-      </figure>
-    </section>
+    </div>
 
-    <section class="kpis" aria-label="Ringkasan" id="kpis"></section>
+    <div id="panel-aset" role="tabpanel" aria-labelledby="tab-aset" class="panel stack" hidden>
+      <section class="card">
+        <h2>Aset berdasarkan prioritas</h2>
+        <p class="muted">Pilih aset untuk melihat alasan skor, temuan, rantai PKI, dan tindakan.</p>
+        <table id="assets" class="assets">
+          <thead><tr><th>Prio</th><th>Aset</th><th>Key exchange</th><th>Autentikasi (PKI)</th><th class="risk-col">Risiko</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+      <section class="card">
+        <h2>Roadmap migrasi</h2>
+        <table id="roadmap" class="stacking">
+          <thead><tr><th>Fase</th><th>Aset</th><th>Tindakan</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </div>
 
-    <section>
-      <h2>Aset berdasarkan risiko</h2>
-      <p class="muted">Pilih aset untuk melihat alasan skor, temuan, dan tindakan.</p>
-      <div class="table-wrap"><table id="assets">
-        <thead><tr><th>Aset</th><th>Jenis</th><th>Key exchange</th><th class="risk-col">Risiko (0–100)</th><th>Status</th></tr></thead>
-        <tbody></tbody>
-      </table></div>
-    </section>
-
-    <section>
-      <h2>Roadmap migrasi</h2>
-      <div class="table-wrap"><table id="roadmap">
-        <thead><tr><th>Fase</th><th>Aset</th><th>Tindakan</th></tr></thead>
-        <tbody></tbody>
-      </table></div>
-    </section>
-
-    <section class="manage" id="manage">
-      <div>
+    <div id="panel-kelola" role="tabpanel" aria-labelledby="tab-kelola" class="panel manage" hidden>
+      <section class="card">
         <h2>Daftarkan target</h2>
-        <form id="target-form">
-          <label>Nama <input name="name" required maxlength="80"></label>
-          <label>Jenis
-            <select name="kind"><option value="tls">Layanan TLS/HTTPS</option><option value="ssh">Server SSH</option><option value="repo">Repo/folder kode</option></select>
-          </label>
-          <label data-for="network">Host <input name="host" placeholder="portal"></label>
-          <label data-for="network">Port <input name="port" type="number" min="1" max="65535" value="443"></label>
-          <label data-for="repo" hidden>Path <input name="path" placeholder="/scan/repo-dummy"></label>
-          <label>Sensitivitas data <select name="sensitivity"></select></label>
-          <label>Eksposur <select name="exposure"></select></label>
-          <label>Migrasi <select name="migration"></select></label>
-          <label class="check"><input type="checkbox" name="authorized"> Saya berwenang memindai target ini.</label>
-          <button class="button primary" type="submit">Tambah ke allowlist</button>
+        <form id="target-form" novalidate>
+          <div class="field" data-tip="nama" data-for="named"><div class="field-head"><label for="f-name">Nama</label></div><input id="f-name" name="name" maxlength="80"></div>
+          <div class="field" data-tip="jenis"><div class="field-head"><label for="f-kind">Jenis</label></div>
+            <select id="f-kind" name="kind">
+              <option value="server">Server (deteksi layanan)</option>
+              <option value="tls">Layanan TLS/HTTPS</option>
+              <option value="ssh">Server SSH</option>
+              <option value="repo">Repo/folder kode</option>
+            </select>
+          </div>
+          <div class="field" data-tip="host" data-for="host"><div class="field-head"><label for="f-host">Host</label></div><input id="f-host" name="host" placeholder="mail.google.com" autocomplete="off"></div>
+          <div class="field" data-tip="port" data-for="port"><div class="field-head"><label for="f-port">Port</label></div><input id="f-port" name="port" type="number" min="1" max="65535" value="443"></div>
+          <div class="field" data-tip="path" data-for="repo"><div class="field-head"><label for="f-path">Path</label></div><input id="f-path" name="path" placeholder="/scan/repo-dummy"></div>
+          <div class="field" data-tip="sensitivitas"><div class="field-head"><label for="f-sens">Sensitivitas data</label></div><select id="f-sens" name="sensitivity"></select></div>
+          <div class="field" data-tip="eksposur"><div class="field-head"><label for="f-exp">Eksposur</label></div><select id="f-exp" name="exposure"></select></div>
+          <div class="field" data-tip="migrasi"><div class="field-head"><label for="f-mig">Migrasi</label></div><select id="f-mig" name="migration"></select></div>
+          <div class="field check" data-tip="izin"><div class="field-head"><input type="checkbox" id="f-auth" name="authorized"><label for="f-auth">Saya berwenang memindai target ini.</label></div></div>
+          <button class="button primary" type="submit" id="target-submit">Deteksi layanan</button>
         </form>
-      </div>
-      <div>
+        <div id="discovered" class="discovered" hidden></div>
+      </section>
+
+      <section class="card">
         <h2>Allowlist</h2>
         <ul class="targets" id="targets"></ul>
+      </section>
+
+      <section class="card">
         <h2>Pengaturan skor</h2>
         <form id="settings-form">
-          <div class="weights">
-            <label>Bobot A <input name="wA" type="number" step="0.05" min="0" max="1" required></label>
-            <label>Bobot S <input name="wS" type="number" step="0.05" min="0" max="1" required></label>
-            <label>Bobot E <input name="wE" type="number" step="0.05" min="0" max="1" required></label>
-            <label>Bobot M <input name="wM" type="number" step="0.05" min="0" max="1" required></label>
+          <div class="field-group">
+            <div class="field-head group-head"><span class="field-title">Bobot konteks</span><span data-tip-inline="bobot"></span></div>
+            <div class="weights">
+              <div class="field"><label for="s-wa">Dasar A</label><input id="s-wa" name="wA" type="number" step="0.05" min="0" max="1" required></div>
+              <div class="field"><label for="s-ws">S</label><input id="s-ws" name="wS" type="number" step="0.05" min="0" max="1" required></div>
+              <div class="field"><label for="s-we">E</label><input id="s-we" name="wE" type="number" step="0.05" min="0" max="1" required></div>
+              <div class="field"><label for="s-wm">M</label><input id="s-wm" name="wM" type="number" step="0.05" min="0" max="1" required></div>
+            </div>
           </div>
-          <label>Tahun komputer kuantum relevan (Z) <input name="quantum_year" type="number" min="2026" max="2100" required></label>
-          <p class="field-title">Masa data harus rahasia (X, tahun)</p>
-          <div class="weights three">
-            <label>Rahasia <input name="x_rahasia" type="number" min="0" max="100" required></label>
-            <label>Internal <input name="x_internal" type="number" min="0" max="100" required></label>
-            <label>Publik <input name="x_publik" type="number" min="0" max="100" required></label>
+          <div class="field" data-tip="tahun"><div class="field-head"><label for="s-year">Tahun komputer kuantum relevan (Z)</label></div><input id="s-year" name="quantum_year" type="number" min="2026" max="2100" required></div>
+          <div class="field-group">
+            <div class="field-head group-head"><span class="field-title">Masa data harus rahasia (X, tahun)</span><span data-tip-inline="x"></span></div>
+            <div class="weights three">
+              <div class="field"><label for="s-xr">Rahasia</label><input id="s-xr" name="x_rahasia" type="number" min="0" max="100" required></div>
+              <div class="field"><label for="s-xi">Internal</label><input id="s-xi" name="x_internal" type="number" min="0" max="100" required></div>
+              <div class="field"><label for="s-xp">Publik</label><input id="s-xp" name="x_publik" type="number" min="0" max="100" required></div>
+            </div>
           </div>
-          <p class="field-title">Lama migrasi (Y, tahun)</p>
-          <div class="weights three">
-            <label>Gateway <input name="y_gateway" type="number" min="0" max="100" required></label>
-            <label>Update <input name="y_update" type="number" min="0" max="100" required></label>
-            <label>Legacy <input name="y_legacy" type="number" min="0" max="100" required></label>
+          <div class="field-group">
+            <div class="field-head group-head"><span class="field-title">Lama migrasi (Y, tahun)</span><span data-tip-inline="y"></span></div>
+            <div class="weights three">
+              <div class="field"><label for="s-yg">Gateway</label><input id="s-yg" name="y_gateway" type="number" min="0" max="100" required></div>
+              <div class="field"><label for="s-yu">Update</label><input id="s-yu" name="y_update" type="number" min="0" max="100" required></div>
+              <div class="field"><label for="s-yl">Legacy</label><input id="s-yl" name="y_legacy" type="number" min="0" max="100" required></div>
+            </div>
           </div>
-          <label>Sumber nilai X dan Y <input name="mosca_source" maxlength="200" placeholder="Kosong berarti asumsi awal"></label>
+          <div class="field" data-tip="sumber"><div class="field-head"><label for="s-src">Sumber nilai X dan Y</label></div><input id="s-src" name="mosca_source" maxlength="200" placeholder="Kosong berarti asumsi awal"></div>
           <button class="button" type="submit">Simpan</button>
           <p class="muted">Berlaku pada scan berikutnya.</p>
         </form>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
   <script src="app.js"></script>
 </body>

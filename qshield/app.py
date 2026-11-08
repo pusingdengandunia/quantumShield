@@ -65,6 +65,29 @@ class TargetIn(BaseModel):
         return self
 
 
+class DiscoverIn(BaseModel):
+    host: str = Field(min_length=1, max_length=2048)
+    authorized: bool = False
+
+    @model_validator(mode="after")
+    def must_be_authorized(self):
+        if not self.authorized:
+            raise ValueError("Konfirmasi izin scan wajib dicentang.")
+        return self
+
+
+class ServiceIn(BaseModel):
+    port: int
+    kind: Literal["tls", "ssh"]
+
+
+class ServerIn(DiscoverIn):
+    services: list[ServiceIn] = Field(min_length=1, max_length=10)
+    sensitivity: Literal["rahasia", "internal", "publik"]
+    exposure: Literal["internet", "antar-satuan", "lan"]
+    migration: Literal["gateway", "update", "legacy"]
+
+
 class SettingsIn(BaseModel):
     wA: float = Field(ge=0, le=1)
     wS: float = Field(ge=0, le=1)
@@ -112,9 +135,25 @@ def remove_target(target_id: int):
     db.delete_target(target_id)
 
 
+@app.post("/api/servers/discover", dependencies=[Depends(require_write)])
+def discover_server(body: DiscoverIn):
+    return service.discover_services(body.host)
+
+
+@app.post("/api/servers", status_code=201, dependencies=[Depends(require_write)])
+def create_server(body: ServerIn):
+    services = [item.model_dump() for item in body.services]
+    return {"ids": service.register_server(body.host, services, body.sensitivity, body.exposure, body.migration)}
+
+
 @app.post("/api/scans", status_code=201, dependencies=[Depends(require_write)])
 def create_scan():
     return {"scan_id": service.run_scan()}
+
+
+@app.get("/api/scans/progress")
+def get_scan_progress():
+    return service.scan_progress()
 
 
 @app.post("/api/targets/{target_id}/gateway", dependencies=[Depends(require_write)])

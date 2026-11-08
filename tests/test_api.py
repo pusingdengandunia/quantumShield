@@ -65,6 +65,117 @@ def test_repo_path_cannot_leave_the_root(client, tmp_path):
     assert client.post("/api/targets", json=repo_target(tmp_path)).status_code == 201
 
 
+@pytest.mark.parametrize("pasted, host, port", [
+    ("https://example.test", "example.test", None),
+    ("https://example.test:8443/login?x=1", "example.test", 8443),
+    ("example.test:8443", "example.test", 8443),
+    ("example.test/login", "example.test", None),
+    ("  Example.TEST  ", "example.test", None),
+    ("10.0.0.5", "10.0.0.5", None),
+])
+def test_pasted_urls_are_normalized(pasted, host, port):
+    assert service.normalize_host(pasted) == (host, port)
+
+
+@pytest.mark.parametrize("value", ["", "   ", "a;}evil", "my_server.local", "2001:db8::1", "exa mple.test", "http://",
+                                   "host:notaport", "example.test;include /etc/passwd"])
+def test_strict_host_check_still_applies_after_normalizing(value):
+    with pytest.raises(service.TargetError):
+        service.normalize_host(value)
+
+
+def test_registered_target_uses_the_normalized_host_and_url_port(client):
+    client.post("/api/targets", json=tls_target(host="https://127.0.0.1:8443/login"))
+    target = client.get("/api/dashboard").json()["targets"][0]
+    assert (target["host"], target["port"], target["server"]) == ("127.0.0.1", 8443, "127.0.0.1")
+
+
+def test_missing_port_uses_the_default_for_the_kind(client):
+    client.post("/api/targets", json=tls_target(port=None))
+    client.post("/api/targets", json=tls_target(name="ssh", kind="ssh", migration="update", port=None))
+    assert [t["port"] for t in client.get("/api/dashboard").json()["targets"]] == [443, 22]
+    assert client.post("/api/targets", json=tls_target(name="bad", port=70000)).status_code == 400
+
+
+def test_discovery_needs_authorization_and_write_header(client):
+    assert client.post("/api/servers/discover", json={"host": "127.0.0.1"}).status_code == 422
+    body = {"host": "127.0.0.1", "authorized": True}
+    assert TestClient(client.app).post("/api/servers/discover", json=body).status_code == 403
+
+
+def test_discovery_only_checks_the_fixed_port_list(client, monkeypatch):
+    seen = []
+
+    def fake(host, port):
+        seen.append(port)
+        return {"port": port, "kind": "ssh" if port == 22 else "tls", "label": "x"} if port in {22, 443} else None
+
+    monkeypatch.setattr(service, "_detect_service", fake)
+    data = client.post("/api/servers/discover", json={"host": "http://127.0.0.1:9999/x", "authorized": True}).json()
+    assert data["host"] == "127.0.0.1"
+    assert sorted(seen) == sorted(service.DISCOVERY_PORTS)
+    assert sorted(s["port"] for s in data["services"]) == [22, 443]
+    assert all(s["registered"] is False for s in data["services"])
+
+
+def server_body(services, migration="gateway"):
+    return {"host": "127.0.0.1", "services": services, "sensitivity": "rahasia", "exposure": "lan", "migration": migration,
+            "authorized": True}
+
+
+def test_server_registration_groups_services_and_fits_migration(client):
+    services = [{"port": 443, "kind": "tls"}, {"port": 22, "kind": "ssh"}, {"port": 993, "kind": "tls"}]
+    assert client.post("/api/servers", json=server_body(services)).status_code == 201
+    targets = {t["port"]: t for t in client.get("/api/dashboard").json()["targets"]}
+    assert targets[443]["migration"] == "gateway"
+    assert targets[22]["migration"] == "update", "SSH cannot use the gateway"
+    assert targets[993]["migration"] == "update", "the gateway only proxies HTTP(S)"
+    assert {t["server"] for t in targets.values()} == {"127.0.0.1"}
+    assert targets[443]["name"] == "127.0.0.1:443"
+
+
+def test_server_registration_refuses_ports_outside_the_list(client):
+    assert client.post("/api/servers", json=server_body([{"port": 3306, "kind": "tls"}])).status_code == 400
+
+
+def test_server_score_is_its_weakest_service(client, monkeypatch):
+    def fake_scan(target):
+        if target["port"] == 443:
+            return {"reachable": True, "items": [{"role": "kex", "quantum": "safe", "algorithm": "X25519MLKEM768", "primitive": "kem", "nist_level": 3}],
+                    "findings": [], "drivers": [{"code": "auth_classic"}]}
+        return {"reachable": True, "items": [{"role": "kex", "quantum": "vulnerable", "algorithm": "curve25519-sha256", "primitive": "key-agree", "nist_level": 0}],
+                "findings": [], "drivers": [{"code": "auth_classic"}]}
+
+    monkeypatch.setattr(service, "scan_target", fake_scan)
+    client.post("/api/servers", json=server_body([{"port": 443, "kind": "tls"}, {"port": 22, "kind": "ssh"}]))
+    assert client.post("/api/scans").status_code == 201
+    data = client.get("/api/dashboard").json()
+    assert [row["priority"] for row in data["rows"]] == ["P1", "P3"]
+    assert [row["status_label"] for row in data["rows"]] == ["Berisiko Tinggi", "Terlindungi Sebagian"]
+    server = data["servers"][0]
+    assert (server["server"], server["services"], server["priority"]) == ("127.0.0.1", 2, "P1")
+    assert server["risk"] == data["rows"][0]["assessment"]["risk"]
+    assert data["status_counts"]["partial"] == 1
+    assert client.get("/api/scans/progress").json() == {"running": False, "done": 2, "total": 2, "current": None}
+
+
+def test_database_from_before_server_grouping_is_migrated(tmp_path, monkeypatch):
+    import sqlite3
+    from qshield import db
+    path = tmp_path / "old.db"
+    monkeypatch.setenv("QSHIELD_DB", str(path))
+    connection = sqlite3.connect(path)
+    connection.execute("CREATE TABLE targets (id INTEGER PRIMARY KEY, name TEXT, kind TEXT, host TEXT, port INTEGER, path TEXT,"
+                       " sensitivity TEXT, exposure TEXT, migration TEXT, gateway_port INTEGER, gateway_status TEXT, created_at TEXT)")
+    connection.commit()
+    connection.close()
+    db.init()
+    db.init()
+    connection = sqlite3.connect(path)
+    assert "server" in {row[1] for row in connection.execute("PRAGMA table_info(targets)")}
+    connection.close()
+
+
 def test_ssh_cannot_use_the_gateway(client):
     body = tls_target(kind="ssh", port=22)
     assert client.post("/api/targets", json=body).status_code == 400

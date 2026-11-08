@@ -11,12 +11,14 @@ services:
       QSHIELD_GATEWAY_CONF: /gateway-conf
       QSHIELD_GATEWAY_HOST: gateway
       QSHIELD_SEED: /app/lab/targets.json
+      QSHIELD_EXTRA_CA: /lab-ca-public/ca.pem
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
       - qshield-data:/data
       - gateway-conf:/gateway-conf
       - repo-dummy:/scan/repo-dummy:ro
+      - lab-ca-public:/lab-ca-public:ro
     depends_on:
       gateway:
         condition: service_healthy
@@ -28,15 +30,31 @@ services:
         condition: service_started
       pq-ready:
         condition: service_started
+      pq-full:
+        condition: service_started
       ssh-admin:
         condition: service_started
 
+  # One-shot job: creates the lab's certificate authorities. Keys stay on lab-ca, which
+  # only the services that issue a certificate mount. The app only sees the public bundle.
+  lab-ca:
+    build: ./lab/ca
+    volumes:
+      - lab-ca:/ca
+      - lab-ca-public:/public
+
   gateway:
     build: ./gateway
+    environment:
+      SERVICE_NAME: gateway
     ports:
       - "127.0.0.1:9443-9452:9443-9452"
     volumes:
       - gateway-conf:/gateway-conf
+      - lab-ca:/ca:ro
+    depends_on:
+      lab-ca:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "pgrep", "nginx"]
       interval: 2s
@@ -46,6 +64,12 @@ services:
     build: ./lab/tls
     environment:
       MODE: classic
+      SERVICE_NAME: portal
+    volumes:
+      - lab-ca:/ca:ro
+    depends_on:
+      lab-ca:
+        condition: service_completed_successfully
 
   legacy-api:
     build: ./lab/tls
@@ -56,6 +80,23 @@ services:
     build: ./lab/tls
     environment:
       MODE: hybrid
+      SERVICE_NAME: pq-ready
+    volumes:
+      - lab-ca:/ca:ro
+    depends_on:
+      lab-ca:
+        condition: service_completed_successfully
+
+  pq-full:
+    build: ./lab/tls
+    environment:
+      MODE: pqfull
+      SERVICE_NAME: pq-full
+    volumes:
+      - lab-ca:/ca:ro
+    depends_on:
+      lab-ca:
+        condition: service_completed_successfully
 
   ssh-admin:
     build: ./lab/ssh
@@ -66,6 +107,8 @@ services:
       - repo-dummy:/out
 
 volumes:
+  lab-ca:
+  lab-ca-public:
   qshield-data:
   gateway-conf:
   repo-dummy:
