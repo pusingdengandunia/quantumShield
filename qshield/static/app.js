@@ -9,7 +9,7 @@ const ROLE_LABEL = { leaf: "Leaf", intermediate: "Intermediate", root: "Root" };
 const TIPS = {
   nama: "Nama aset untuk dashboard dan laporan. Tidak dipakai untuk koneksi. Harus unik.",
   jenis: "Server mendeteksi layanan di port umum secara otomatis. TLS/HTTPS untuk layanan web, SSH untuk server admin, Repo untuk folder kode.",
-  host: "Nama host atau IPv4, contoh mail.google.com. URL yang ditempel otomatis dipecah. Hanya huruf, angka, titik, dan tanda hubung.",
+  host: "Nama host atau IPv4 milik satuanmu, contoh portal.satuan.example. URL yang ditempel otomatis dipecah. Hanya huruf, angka, titik, dan tanda hubung.",
   port: "1 sampai 65535. Umumnya HTTPS 443, SSH 22.",
   path: "Folder di dalam container di bawah /scan, contoh /scan/proyek. Mount folder di docker-compose.yml dulu. URL dan path Windows ditolak.",
   sensitivitas: "Seberapa lama dan seberapa penting data harus rahasia. Ikut menentukan skor risiko dan nilai X.",
@@ -90,16 +90,20 @@ async function runScan() {
   const box = $("progress");
   const fill = $("progress-fill");
   const text = $("progress-text");
+  const track = $("progress-track");
   let active = true;
   box.hidden = false;
   fill.style.width = "0";
+  track.setAttribute("aria-valuenow", "0");
   text.textContent = "Memulai scan…";
   const poll = async () => {
     while (active) {
       try {
         const progress = await api("api/scans/progress");
         if (active && progress.running) {
-          fill.style.width = `${progress.total ? (progress.done / progress.total) * 100 : 0}%`;
+          const percent = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
+          fill.style.width = `${percent}%`;
+          track.setAttribute("aria-valuenow", String(percent));
           text.textContent = `Memindai ${Math.min(progress.done + 1, progress.total)} dari ${progress.total}: ${progress.current || ""}`;
         }
       } catch { /* The scan request reports its own failure. */ }
@@ -209,8 +213,8 @@ function renderTrend(history) {
   const W = 560, H = 210, left = 34, right = 12, top = 12, bottom = 12;
   const x = (i) => left + (i / (points.length - 1)) * (W - left - right);
   const y = (value) => top + (1 - value / 100) * (H - top - bottom);
-  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
-    "aria-label": `Tren skor dari ${points[0].readiness} ke ${points.at(-1).readiness}` });
+  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", tabindex: 0,
+    "aria-label": `Tren skor dari ${points[0].readiness} ke ${points.at(-1).readiness}. Tekan panah kiri atau kanan untuk membaca tiap scan.` });
   for (const tick of [0, 50, 100]) {
     root.append(svg("line", { x1: left, x2: W - right, y1: y(tick), y2: y(tick), stroke: "var(--grid)" }));
     const label = svg("text", { x: left - 8, y: y(tick) + 4, "text-anchor": "end", "font-size": 12, fill: "var(--text-secondary)" });
@@ -224,26 +228,44 @@ function renderTrend(history) {
   root.append(marker);
 
   const tooltip = h("div", { class: "tooltip", hidden: true });
-  const place = (event) => {
+  const spoken = h("p", { class: "sr-only", "aria-live": "polite" });
+  const last = points.length - 1;
+  let current = last;
+  const show = (index, announce) => {
+    current = index;
     const box = root.getBoundingClientRect();
     const scale = W / box.width;
-    const ratio = ((event.clientX - box.left) * scale - left) / (W - left - right);
-    const index = Math.max(0, Math.min(points.length - 1, Math.round(ratio * (points.length - 1))));
     const point = points.at(index);
+    const label = `${point.readiness.toFixed(1)} · ${formatTime(point.finished_at)}`;
     marker.setAttribute("cx", x(index));
     marker.setAttribute("cy", y(point.readiness));
     tooltip.hidden = false;
-    tooltip.textContent = `${point.readiness.toFixed(1)} · ${formatTime(point.finished_at)}`;
+    tooltip.textContent = label;
     tooltip.style.left = `${Math.min(box.width - 90, Math.max(90, x(index) / scale))}px`;
     tooltip.style.top = `${Math.max(26, y(point.readiness) / scale - 10)}px`;
+    if (announce) spoken.textContent = `Scan ${index + 1} dari ${points.length}: skor ${label}`;
   };
-  root.addEventListener("pointermove", place);
-  root.addEventListener("pointerleave", () => {
+  const reset = () => {
+    current = last;
     tooltip.hidden = true;
-    marker.setAttribute("cx", x(points.length - 1));
+    marker.setAttribute("cx", x(last));
     marker.setAttribute("cy", y(points.at(-1).readiness));
+  };
+  root.addEventListener("pointermove", (event) => {
+    const box = root.getBoundingClientRect();
+    const ratio = ((event.clientX - box.left) * (W / box.width) - left) / (W - left - right);
+    show(Math.max(0, Math.min(last, Math.round(ratio * last))), false);
   });
-  host.append(root, tooltip);
+  root.addEventListener("pointerleave", () => { if (document.activeElement !== root) reset(); });
+  root.addEventListener("focus", () => show(current, true));
+  root.addEventListener("blur", reset);
+  root.addEventListener("keydown", (event) => {
+    const next = { ArrowLeft: current - 1, ArrowRight: current + 1, Home: 0, End: last }[event.key];
+    if (next == null) return;
+    event.preventDefault();
+    show(Math.max(0, Math.min(last, next)), true);
+  });
+  host.append(root, tooltip, spoken);
 }
 
 function renderKpis(data) {
@@ -371,7 +393,7 @@ function detailRow(row, readOnly) {
   const findings = row.findings.length
     ? h("ul", {}, row.findings.map((finding) => h("li", { class: `finding-${finding.severity}` }, finding.text)))
     : h("p", { class: "detail-note" }, "Tidak ada temuan.");
-  return h("tr", { class: "detail" }, h("td", { colspan: 6 },
+  return h("tr", { class: "detail", id: `detail-${row.target_id}` }, h("td", { colspan: 6 },
     h("div", { class: "detail-grid" },
       scoreBlock(row),
       h("div", { class: "detail-block" }, h("h3", {}, "Temuan"), findings),
@@ -385,14 +407,26 @@ function assetRow(row, readOnly) {
   const [authMain, authSub] = authLabel(row);
   const fill = h("div", { class: "risk-fill" });
   fill.style.width = `${row.assessment.risk}%`;
-  const toggle = () => {
-    openRow = openRow === row.target_id ? null : row.target_id;
+  const open = openRow === row.target_id;
+  // The name button is the keyboard and screen-reader control. A click anywhere
+  // on the row, including the button itself, bubbles up to this one handler.
+  const toggle = (event) => {
+    if (event.target.closest("a, .detail")) return;
+    const refocus = document.activeElement?.classList.contains("row-toggle");
+    openRow = open ? null : row.target_id;
     renderAssets(state);
+    if (refocus) {
+      for (const button of document.querySelectorAll(".row-toggle")) {
+        if (button.dataset.row === String(row.target_id)) button.focus();
+      }
+    }
   };
-  const cells = h("tr", { class: "asset", tabindex: 0, "aria-expanded": String(openRow === row.target_id), onclick: toggle,
-    onkeydown: (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(); } } },
+  const nameButton = h("button", { class: "row-toggle name", type: "button", "aria-expanded": String(open),
+    "aria-controls": open ? `detail-${row.target_id}` : null }, row.target_name);
+  nameButton.dataset.row = row.target_id;
+  const cells = h("tr", { class: `asset${open ? " open" : ""}`, onclick: toggle },
     h("td", { class: "cell-prio", "data-label": "Prioritas" }, h("span", { class: `priority ${row.priority}` }, row.priority)),
-    h("td", { class: "cell-name" }, h("span", { class: "name" }, row.target_name)),
+    h("td", { class: "cell-name" }, nameButton),
     h("td", { "data-label": "Key exchange" }, kexMain, h("span", { class: "sub" }, kexSub)),
     h("td", { "data-label": "Autentikasi (PKI)" }, authMain, h("span", { class: "sub" }, authSub)),
     h("td", { class: "cell-risk", "data-label": "Risiko" }, h("div", { class: "risk" }, h("div", { class: "risk-track" }, fill), h("span", { class: "risk-number" }, row.assessment.risk.toFixed(1)))),
@@ -609,6 +643,7 @@ window.addEventListener("resize", closeTip);
 
 async function refresh() {
   state = await api("api/dashboard");
+  $("loading").hidden = true;
   const hasResults = state.rows.length > 0;
   $("empty-state").hidden = hasResults;
   $("summary-content").hidden = !hasResults;
@@ -626,4 +661,7 @@ async function refresh() {
 syncTargetForm();
 selectTab(location.hash.slice(1) || "ringkasan");
 window.addEventListener("hashchange", () => selectTab(location.hash.slice(1)));
-refresh().catch((error) => showError(error.message));
+refresh().catch((error) => {
+  $("loading").textContent = "Data dashboard gagal dimuat. Muat ulang halaman, atau periksa apakah layanan Q-Shield berjalan.";
+  showError(error.message);
+});
