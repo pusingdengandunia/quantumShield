@@ -157,7 +157,9 @@ main { max-width: var(--page-max); margin: 0 auto; padding: 16px var(--gutter) 4
 .banner.good { border-color: var(--good); }
 
 /* Summary */
-.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+/* The trend chart keeps its aspect ratio, so it grows taller as it widens.
+   A 3:2 split keeps it about as tall as the score card beside it. */
+.hero-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; }
 .score { margin: 2px 0; font-size: 60px; line-height: 1.05; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .score-max { font-size: 17px; font-weight: 400; color: var(--text-secondary); letter-spacing: 0; }
 .delta { margin-bottom: 14px; font-size: 13px; color: var(--text-secondary); min-height: 20px; }
@@ -271,7 +273,8 @@ tr.server-row strong { color: var(--text-primary); }
 .mini th, .mini td { padding: 4px 12px 4px 0; font-variant-numeric: tabular-nums; }
 
 /* Manage */
-.manage { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+/* Cards in one row share a height, so a short allowlist does not leave a hole. */
+.manage { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: stretch; }
 form { display: grid; gap: 12px; }
 .field, .field-group { display: grid; gap: 4px; min-width: 0; }
 .field-head { display: flex; align-items: center; gap: 6px; }
@@ -336,9 +339,12 @@ form .button { justify-self: start; }
 .footer-col a { color: var(--text-secondary); font-size: 14px; text-decoration: none; }
 .footer-col a:hover { color: var(--text-primary); text-decoration: underline; }
 .footer-bottom {
-  max-width: var(--page-max); margin: 0 auto; padding: 14px var(--gutter) 24px; border-top: 1px solid var(--grid);
+  max-width: var(--page-max); margin: 0 auto; padding: 14px var(--gutter) 24px; position: relative;
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; font-size: 13px; color: var(--text-secondary);
 }
+
+/* Divider inset by the gutter so it lines up with the content edges. */
+.footer-bottom::before { content: ""; position: absolute; top: 0; left: var(--gutter); right: var(--gutter); border-top: 1px solid var(--grid); }
 
 @media (max-width: 860px) {
   .hero-grid { grid-template-columns: minmax(0, 1fr); }
