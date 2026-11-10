@@ -205,6 +205,37 @@ def test_gateway_route_is_only_active_after_a_real_hybrid_handshake(client, tmp_
     assert not (tmp_path / "conf" / f"route-{target_id}.conf").exists()
 
 
+def test_reset_clears_scans_benchmarks_and_gateways_but_keeps_targets(client, tmp_path, monkeypatch):
+    from qshield import db
+    monkeypatch.setenv("QSHIELD_GATEWAY_CONF", str(tmp_path / "conf"))
+    monkeypatch.setattr(gateway, "wait_for_hybrid", lambda port: True)
+    monkeypatch.setattr(service, "scan_target", lambda target: {"reachable": True, "items": [], "findings": []})
+    target_id = client.post("/api/targets", json=tls_target()).json()["id"]
+    assert client.post(f"/api/targets/{target_id}/gateway").json()["status"] == "aktif"
+    db.save_benchmark(target_id, {"extra_ms": 1.0})
+    assert client.post("/api/scans").status_code == 201
+    client.put("/api/settings", json={**SETTINGS, "quantum_year": 2035})
+
+    assert client.post("/api/reset").status_code == 204
+    data = client.get("/api/dashboard").json()
+    assert data["rows"] == [] and data["history"] == [] and data["readiness"] is None
+    assert not (tmp_path / "conf" / f"route-{target_id}.conf").exists()
+    target = data["targets"][0]
+    assert (target["id"], target["gateway_port"], target["gateway_status"]) == (target_id, None, None)
+    assert db.list_benchmarks() == {}
+    assert data["settings"]["quantum_year"] == 2035
+
+
+def test_reset_is_refused_while_a_scan_runs(client, monkeypatch):
+    monkeypatch.setitem(service._progress, "running", True)
+    assert client.post("/api/reset").status_code == 400
+
+
+def test_reset_is_refused_in_read_only_mode(client, monkeypatch):
+    monkeypatch.setenv("QSHIELD_READ_ONLY", "1")
+    assert client.post("/api/reset").status_code == 403
+
+
 SETTINGS = {"wA": 0.4, "wS": 0.3, "wE": 0.2, "wM": 0.1, "quantum_year": 2030, "x_rahasia": 10, "x_internal": 5,
             "x_publik": 0, "y_gateway": 1, "y_update": 2, "y_legacy": 5, "mosca_source": ""}
 

@@ -242,6 +242,17 @@ def remove_gateway(target_id: int) -> None:
     db.set_gateway(target_id, None, None)
 
 
+def reset_scans() -> None:
+    """Return the dashboard to its pre-scan state. Gateway routes are removed first so
+    the next scan sees each asset as it really is, not through a gateway."""
+    if _progress.get("running"):
+        raise TargetError("Scan sedang berjalan. Tunggu sampai selesai sebelum reset.")
+    for target in db.list_targets():
+        if target["gateway_port"]:
+            gateway.remove_route(target["id"])
+    db.reset_scans()
+
+
 def run_benchmark(target_id: int) -> dict:
     target = db.get_target(target_id)
     if target is None or not target["gateway_port"]:

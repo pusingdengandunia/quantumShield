@@ -12,8 +12,8 @@ Data rahasia yang dienkripsi dengan RSA/ECC hari ini sudah terancam: lawan bisa 
 
 1. **Temukan:** scanner membaca TLS, SSH, sertifikat, kode, dan konfigurasi.
 2. **Nilai:** setiap aset diberi skor risiko dan diuji dengan teorema Mosca.
-3. **Lindungi:** aset HTTPS dibungkus gateway hybrid `X25519MLKEM768`.
-4. **Buktikan:** scan ulang memverifikasi handshake hybrid dan benchmark mengukur biayanya.
+3. **Rekomendasikan:** setiap aset mendapat rekomendasi migrasi sesuai prioritas, misalnya gateway hybrid `X25519MLKEM768`, update software, atau penggantian perangkat. Gateway bisa dicoba pada lab.
+4. **Verifikasi:** scan ulang memeriksa handshake hybrid, dan benchmark mengukur beban kinerjanya (tambahan waktu dan data per handshake).
 
 ## Menjalankan lab
 
@@ -38,7 +38,7 @@ Buka http://localhost:8000, lalu:
 
 Hasilnya dikelompokkan per server dan diurutkan menurut prioritas. Port 25 dan 587 tidak ikut karena butuh STARTTLS. Tidak ada scan rentang port bebas.
 
-Untuk mereset lab: `docker compose down -v`.
+Untuk mengulang demo, klik **Reset hasil scan** di tab **Kelola**. Riwayat scan, benchmark, dan semua gateway dihapus; allowlist dan pengaturan skor tetap. Untuk mereset lab sepenuhnya, termasuk allowlist: `docker compose down -v`.
 
 ## Isi lab "Satuan Kartika-01"
 

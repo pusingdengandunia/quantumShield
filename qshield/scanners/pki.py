@@ -80,6 +80,17 @@ def _is_ca(cert: x509.Certificate) -> bool:
         return False
 
 
+def _subject_names(cert: x509.Certificate, limit: int = 10) -> list[str]:
+    """DNS names and IP addresses the certificate is valid for, so a hostname
+    mismatch can show which names the server actually presented."""
+    try:
+        names = cert.extensions.get_extension_for_class(x509.SubjectAlternativeName).value
+    except x509.ExtensionNotFound:
+        return []
+    values = names.get_values_for_type(x509.DNSName) + [str(ip) for ip in names.get_values_for_type(x509.IPAddress)]
+    return values[:limit]
+
+
 def describe_certificate(pem: str, position: int = 0, now: datetime | None = None) -> dict:
     now = now or datetime.now(timezone.utc)
     cert = x509.load_pem_x509_certificate(pem.encode())
@@ -98,6 +109,7 @@ def describe_certificate(pem: str, position: int = 0, now: datetime | None = Non
         "role": role,
         "subject": cert.subject.rfc4514_string(),
         "issuer": cert.issuer.rfc4514_string(),
+        "names": _subject_names(cert),
         "key_algorithm": key_algorithm,
         "key_size": key_size,
         "signature_algorithm": signature,

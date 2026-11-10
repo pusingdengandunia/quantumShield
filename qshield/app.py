@@ -151,6 +151,11 @@ def create_scan():
     return {"scan_id": service.run_scan()}
 
 
+@app.post("/api/reset", status_code=204, dependencies=[Depends(require_write)])
+def reset_scans():
+    service.reset_scans()
+
+
 @app.get("/api/scans/progress")
 def get_scan_progress():
     return service.scan_progress()

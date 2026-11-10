@@ -75,7 +75,11 @@ def test_problems_become_drivers_and_findings():
     assert any("kedaluwarsa dalam" in finding["text"] for finding in report["findings"])
 
     other = make_cert("a", sans=["other"])
-    assert "hostname_mismatch" in codes(pki.analyze(output_for(other), "a", now=NOW))
+    mismatch = pki.analyze(output_for(other), "a", now=NOW)
+    assert "hostname_mismatch" in codes(mismatch)
+    # The dashboard's phishing warning names the hosts the certificate really covers.
+    assert mismatch["pki"]["chain"][0]["names"] == ["other"]
+    assert mismatch["pki"]["trust"]["hostname_match"] is False
 
     untrusted = pki.analyze(output_for(make_cert("a", sans=["a"]), verification="Verification error: self-signed certificate",
                                        code="18 (self-signed certificate)"), "a", now=NOW)

@@ -21,7 +21,18 @@ const TIPS = {
   x: "Berapa tahun data harus tetap rahasia. Mengubah label Mosca, bukan angka risiko.",
   y: "Berapa tahun migrasi aset. Mengubah label Mosca, bukan angka risiko.",
   sumber: "Asal nilai X dan Y. Tampil di detail aset dan PDF.",
+  prioritas: "Prioritas adalah urutan penanganan, ditentukan dari status aset hasil scan. P1: berisiko tinggi (skor risiko 70 atau lebih), tangani segera. P2: rentan, targetkan selesai dalam 6 bulan. P3: terlindungi sebagian (key exchange sudah hybrid, autentikasi belum PQC), dalam 12 bulan. P4: terlindungi, cukup dipantau. Dalam prioritas yang sama, risiko tertinggi didahulukan.",
 };
+
+/** Hostname mismatch on a scanned certificate: the server presented a certificate
+ *  issued for other names. Not proof of phishing, so the UI says "indikasi". */
+function phishing(row) {
+  const audit = row.detail?.pki;
+  if (!audit || audit.trust?.hostname_match !== false) return null;
+  const leaf = audit.chain?.[0] || {};
+  const names = leaf.names?.length ? leaf.names.join(", ") : commonName(leaf.subject);
+  return { host: row.target.host, names };
+}
 
 const $ = (id) => document.getElementById(id);
 let state = null;
@@ -291,6 +302,15 @@ function renderTopLists(data) {
     h("span", { class: "main" }, h("span", { class: "name" }, entry.target), h("span", { class: "sub" }, h("br"), entry.action)))) : [h("li", { class: "sub" }, "Tidak ada tindakan tertunda.")]));
 }
 
+function renderPhishSummary(data) {
+  const flagged = data.rows.filter(phishing);
+  $("phish-summary").hidden = !flagged.length;
+  if (!flagged.length) return;
+  const names = flagged.map((row) => row.target_name).join(", ");
+  $("phish-summary-text").textContent = `${flagged.length} aset mengirim sertifikat yang tidak cocok dengan nama host-nya: ${names}. `
+    + "Ini bisa berarti situs palsu, penyadapan, atau salah konfigurasi. Jangan kirim data rahasia sebelum diperiksa.";
+}
+
 /* ---------- Assets ---------- */
 
 function authLabel(row) {
@@ -393,7 +413,14 @@ function detailRow(row, readOnly) {
   const findings = row.findings.length
     ? h("ul", {}, row.findings.map((finding) => h("li", { class: `finding-${finding.severity}` }, finding.text)))
     : h("p", { class: "detail-note" }, "Tidak ada temuan.");
+  const phish = phishing(row);
+  const phishAlert = phish ? h("div", { class: "phish-alert" },
+    h("h4", {}, "Indikasi phishing: nama host tidak cocok"),
+    h("p", {}, `Server di ${phish.host} mengirim sertifikat untuk ${phish.names}, bukan untuk ${phish.host}. `
+      + "Ini bisa berarti situs palsu, penyadapan (man-in-the-middle), atau sertifikat yang salah pasang."),
+    h("p", {}, "Jangan kirim data rahasia ke layanan ini sampai pemilik server memastikan sertifikatnya.")) : null;
   return h("tr", { class: "detail", id: `detail-${row.target_id}` }, h("td", { colspan: 6 },
+    phishAlert,
     h("div", { class: "detail-grid" },
       scoreBlock(row),
       h("div", { class: "detail-block" }, h("h4", {}, "Temuan"), findings),
@@ -426,7 +453,9 @@ function assetRow(row, readOnly) {
   nameButton.dataset.row = row.target_id;
   const cells = h("tr", { class: `asset${open ? " open" : ""}`, onclick: toggle },
     h("td", { class: "cell-prio", "data-label": "Prioritas" }, h("span", { class: `priority ${row.priority}` }, row.priority)),
-    h("td", { class: "cell-name" }, nameButton),
+    h("td", { class: "cell-name" }, nameButton, phishing(row)
+      ? h("span", { class: "phish-flag" }, h("span", { class: "status-icon", "aria-hidden": "true" }, "!"), "Indikasi phishing")
+      : null),
     h("td", { "data-label": "Key exchange" }, kexMain, h("span", { class: "sub" }, kexSub)),
     h("td", { "data-label": "Autentikasi (PKI)" }, authMain, h("span", { class: "sub" }, authSub)),
     h("td", { class: "cell-risk", "data-label": "Risiko" }, h("div", { class: "risk" }, h("div", { class: "risk-track" }, fill), h("span", { class: "risk-number" }, row.assessment.risk.toFixed(1)))),
@@ -578,6 +607,17 @@ $("settings-form").addEventListener("submit", (event) => {
 
 $("scan-button").addEventListener("click", (event) => act(event.target, "Memindai…", runScan));
 
+$("reset-button").addEventListener("click", (event) => {
+  const sure = confirm("Reset hasil scan?\n\nRiwayat scan, hasil benchmark, dan semua gateway yang terpasang akan dihapus. "
+    + "Allowlist dan pengaturan skor tetap tersimpan. Tindakan ini tidak bisa dibatalkan.");
+  if (!sure) return;
+  act(event.currentTarget, "Mereset…", async () => {
+    await api("api/reset", "POST");
+    openRow = null;
+    showNotice("Hasil scan sudah direset. Klik Jalankan scan untuk mulai lagi.");
+  });
+});
+
 /* ---------- Info tooltips ---------- */
 
 const tip = h("div", { class: "tip", role: "tooltip", id: "tip", hidden: true });
@@ -653,6 +693,7 @@ async function refresh() {
   renderTrend(state.history);
   renderKpis(state);
   renderTopLists(state);
+  renderPhishSummary(state);
   renderAssets(state);
   renderRoadmap(state.roadmap);
   renderManage(state);
