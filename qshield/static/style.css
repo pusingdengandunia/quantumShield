@@ -1,5 +1,19 @@
+/* Geist and Geist Mono, the typefaces router.classai.id uses. Self-hosted from
+   the official geist npm package (SIL OFL 1.1, see fonts/OFL.txt) because the
+   CSP only allows same-origin files. */
+@font-face {
+  font-family: "Geist"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url("fonts/Geist-Variable.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Geist Mono"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url("fonts/GeistMono-Variable.woff2") format("woff2");
+}
+
 :root {
   color-scheme: light;
+  --font-sans: "Geist", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
   --surface-0: #f4f4f1;
   --surface-1: #fcfcfb;
   --text-primary: #0b0b0b;
@@ -92,13 +106,19 @@ body {
   flex-direction: column;
   background: var(--surface-0);
   color: var(--text-primary);
-  font: 17px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 17px/1.5 var(--font-sans);
+  /* Same stylistic sets as router.classai.id: ss01 alternates, cv11 single-storey a. */
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
 }
 body > main { flex: 1 0 auto; width: 100%; }
-h2 { font-size: 36px; line-height: 1.2; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+/* Their .display style: weight 600, -0.045em tracking. Line height is 1.05
+   instead of their 0.95 so a heading that wraps on a phone does not collide. */
+h2 { font-size: 36px; line-height: 1.05; margin: 0; font-weight: 600; letter-spacing: -0.045em; }
 h3 { font-size: 17px; margin: 0 0 8px; font-weight: 600; }
 h4 { font-size: 15px; margin: 0 0 8px; font-weight: 600; }
-code { font-size: 0.92em; }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+input, select, button { font-feature-settings: inherit; }
 p { margin: 0; }
 .muted { color: var(--text-secondary); font-size: 15px; margin: 0 0 12px; }
 
@@ -111,7 +131,7 @@ p { margin: 0; }
 }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; color: inherit; text-decoration: none; justify-self: start; }
 .brand-text { display: grid; min-width: 0; }
-.brand-name { font-size: 22px; line-height: 1.25; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+.brand-name { font-size: 22px; line-height: 1.25; font-weight: 600; letter-spacing: -0.03em; margin: 0; }
 .brand-sub { font-size: 15px; color: var(--text-secondary); }
 .tabs { display: flex; gap: 4px; }
 .top-actions { display: flex; align-items: center; gap: 10px; justify-self: end; }
@@ -145,9 +165,19 @@ main { max-width: var(--page-max); margin: 0 auto; padding: 16px var(--gutter) 4
 }
 .button:hover { background: var(--hover); }
 .button:active { background: var(--grid); }
-.button.primary { background: var(--action); border-color: var(--action); color: var(--accent-text); }
-.button.primary:hover { filter: brightness(0.92); background: var(--action); }
-.button.primary:active { filter: brightness(0.84); }
+.button.primary { background: var(--action); border-color: var(--action); color: var(--accent-text); position: relative; isolation: isolate; overflow: hidden; }
+/* Hover gradient, requested for "Jalankan scan" and "Deteksi layanan" and kept on
+   every primary button for consistency. Stops come from router.classai.id's brand
+   blues; each holds white text at 4.6:1 or more (contrast-check.py). It fades in
+   as a layer because a gradient cannot transition directly. */
+.button.primary::before {
+  content: ""; position: absolute; inset: -1px; z-index: -1; opacity: 0; transition: opacity 0.25s ease;
+  background: linear-gradient(110deg, #0d40b3 0%, #1463ff 55%, #2f6df0 100%);
+}
+.button.primary:hover::before, .button.primary:focus-visible::before { opacity: 1; }
+.button.primary:hover { background: var(--action); border-color: #0d40b3; }
+.button.primary:active::before { opacity: 1; filter: brightness(0.88); }
+.button.primary:disabled::before { opacity: 0; }
 /* Buttons are disabled only while their own request runs, so the cursor says "working". */
 .button:disabled { opacity: 0.55; cursor: progress; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -161,7 +191,7 @@ main { max-width: var(--page-max); margin: 0 auto; padding: 16px var(--gutter) 4
 /* The trend chart keeps its aspect ratio, so it grows taller as it widens.
    A 3:2 split keeps it about as tall as the score card beside it. */
 .hero-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; }
-.score { margin: 2px 0; font-size: 66px; line-height: 1.05; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.score { margin: 2px 0; font-size: 66px; line-height: 1.05; font-weight: 600; letter-spacing: -0.045em; font-variant-numeric: tabular-nums; }
 .score-max { font-size: 19px; font-weight: 400; color: var(--text-secondary); letter-spacing: 0; }
 .delta { margin-bottom: 14px; font-size: 15px; color: var(--text-secondary); min-height: 20px; }
 .delta.up { color: var(--good-text); }
