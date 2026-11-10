@@ -81,12 +81,20 @@ label:has(> input[type="checkbox"]),
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+/* Page width: content grows with the screen up to 1680px; side gutters
+   scale from 16px on phones to 48px on wide monitors. */
+:root { --page-max: 1680px; --gutter: clamp(16px, 3vw, 48px); }
+/* Full-height column so the footer sits at the bottom on short tabs. */
 body {
   margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: var(--surface-0);
   color: var(--text-primary);
   font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+body > main { flex: 1 0 auto; width: 100%; }
 h2 { font-size: 26px; line-height: 1.2; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
 h3 { font-size: 15px; margin: 0 0 8px; font-weight: 600; }
 h4 { font-size: 13px; margin: 0 0 8px; font-weight: 600; }
@@ -98,7 +106,7 @@ p { margin: 0; }
 .top { position: sticky; top: 0; z-index: 10; background: var(--surface-1); border-bottom: 1px solid var(--grid); }
 /* Logo left, tabs centred, actions right. */
 .top-inner {
-  max-width: 1200px; margin: 0 auto; padding: 10px 16px;
+  max-width: var(--page-max); margin: 0 auto; padding: 10px var(--gutter);
   display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px 24px;
 }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; color: inherit; text-decoration: none; justify-self: start; }
@@ -119,12 +127,12 @@ p { margin: 0; }
 }
 .tabs button:hover { background: var(--hover); color: var(--text-primary); }
 .tabs button[aria-selected="true"] { background: var(--grid); color: var(--text-primary); font-weight: 600; }
-.progress { max-width: 1200px; margin: 0 auto; padding: 0 16px 10px; font-size: 13px; color: var(--text-secondary); }
+.progress { max-width: var(--page-max); margin: 0 auto; padding: 0 var(--gutter) 10px; font-size: 13px; color: var(--text-secondary); }
 .progress-track { height: 4px; background: var(--grid); border-radius: 2px; overflow: hidden; margin-bottom: 4px; }
 .progress-fill { height: 100%; width: 0; background: var(--series-1); transition: width 0.2s; }
 
 /* Page */
-main { max-width: 1200px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 16px; }
+main { max-width: var(--page-max); margin: 0 auto; padding: 16px var(--gutter) 48px; display: grid; gap: 16px; align-content: start; }
 .panel, .stack { display: grid; gap: 16px; min-width: 0; }
 .card, .empty { background: var(--surface-1); border: 1px solid var(--grid); border-radius: 10px; padding: 20px; min-width: 0; }
 .empty { text-align: center; padding: 48px 20px; }
@@ -263,7 +271,7 @@ tr.server-row strong { color: var(--text-primary); }
 .mini th, .mini td { padding: 4px 12px 4px 0; font-variant-numeric: tabular-nums; }
 
 /* Manage */
-.manage { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
+.manage { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
 form { display: grid; gap: 12px; }
 .field, .field-group { display: grid; gap: 4px; min-width: 0; }
 .field-head { display: flex; align-items: center; gap: 6px; }
@@ -318,7 +326,7 @@ form .button { justify-self: start; }
 /* Footer */
 .site-footer { border-top: 1px solid var(--grid); background: var(--surface-1); margin-top: 24px; }
 .footer-inner {
-  max-width: 1200px; margin: 0 auto; padding: 32px 16px 24px;
+  max-width: var(--page-max); margin: 0 auto; padding: 32px var(--gutter) 24px;
   display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: 24px;
 }
 .footer-brand { display: grid; gap: 8px; max-width: 46ch; }
@@ -328,7 +336,7 @@ form .button { justify-self: start; }
 .footer-col a { color: var(--text-secondary); font-size: 14px; text-decoration: none; }
 .footer-col a:hover { color: var(--text-primary); text-decoration: underline; }
 .footer-bottom {
-  max-width: 1200px; margin: 0 auto; padding: 14px 16px 24px; border-top: 1px solid var(--grid);
+  max-width: var(--page-max); margin: 0 auto; padding: 14px var(--gutter) 24px; border-top: 1px solid var(--grid);
   display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; font-size: 13px; color: var(--text-secondary);
 }
 
