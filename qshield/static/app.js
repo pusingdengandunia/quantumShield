@@ -317,7 +317,7 @@ function scoreBlock(row) {
   const entry = (term, value) => [h("dt", {}, term), h("dd", {}, value)];
   const drivers = a.drivers || [];
   return h("div", { class: "detail-block" },
-    h("h3", {}, `Mengapa skornya ${a.risk.toFixed(1)}`),
+    h("h4", {}, `Mengapa skornya ${a.risk.toFixed(1)}`),
     a.context != null ? h("div", { class: "formula" }, `100 × A ${a.A.toFixed(1)} × konteks ${a.context.toFixed(2)}`) : null,
     drivers.length
       ? h("ul", {}, drivers.map((driver) => h("li", {}, `${driver.label} (A ${driver.A.toFixed(1)})`)))
@@ -337,7 +337,7 @@ function chainBlock(row) {
   if (!audit) {
     const items = row.items.filter((item) => item.role !== "code");
     const codeHits = row.items.length - items.length;
-    return h("div", { class: "detail-block" }, h("h3", {}, "Kriptografi terdeteksi"),
+    return h("div", { class: "detail-block" }, h("h4", {}, "Kriptografi terdeteksi"),
       items.length ? h("ul", {}, items.map((item) => h("li", {}, `${item.algorithm} (${item.role})`))) : null,
       codeHits ? h("p", { class: "detail-note" }, `${codeHits} pemakaian di ${row.detail.files_scanned} berkas.`) : null,
       !items.length && !codeHits ? h("p", { class: "detail-note" }, "Tidak ada.") : null);
@@ -345,7 +345,7 @@ function chainBlock(row) {
   const trust = audit.trust;
   const trustText = trust.verified === true ? "Rantai tepercaya" : trust.verified === false ? `Tidak tepercaya: ${trust.code || "-"}` : "Kepercayaan tidak diperiksa";
   return h("div", { class: "detail-block" },
-    h("h3", {}, "Rantai PKI"),
+    h("h4", {}, "Rantai PKI"),
     h("ol", { class: "chain" }, audit.chain.map((entry) => {
       const size = entry.key_size && ["RSA", "DSA"].includes(entry.key_algorithm) ? `-${entry.key_size}` : "";
       return h("li", {},
@@ -364,7 +364,7 @@ function chainBlock(row) {
 function benchmarkTable(bench) {
   const line = (name, data) => h("tr", {}, h("td", {}, name), h("td", {}, data.median_ms.toFixed(1)), h("td", {}, data.bytes.toLocaleString("id-ID")));
   return h("div", { class: "detail-block" },
-    h("h3", {}, `Benchmark gateway (median ${bench.classic.samples} handshake)`),
+    h("h4", {}, `Benchmark gateway (median ${bench.classic.samples} handshake)`),
     h("table", { class: "mini" },
       h("thead", {}, h("tr", {}, h("th", {}, "Grup"), h("th", {}, "Waktu (ms)"), h("th", {}, "Data (byte)"))),
       h("tbody", {}, line(bench.classic_group, bench.classic), line(bench.hybrid_group, bench.hybrid))),
@@ -396,7 +396,7 @@ function detailRow(row, readOnly) {
   return h("tr", { class: "detail", id: `detail-${row.target_id}` }, h("td", { colspan: 6 },
     h("div", { class: "detail-grid" },
       scoreBlock(row),
-      h("div", { class: "detail-block" }, h("h3", {}, "Temuan"), findings),
+      h("div", { class: "detail-block" }, h("h4", {}, "Temuan"), findings),
       chainBlock(row),
       row.benchmark ? benchmarkTable(row.benchmark) : null),
     gatewayNote, actions.children.length ? actions : null));
@@ -472,6 +472,7 @@ function fillSelect(name, options) {
 
 function renderManage(data) {
   $("tab-kelola").hidden = data.read_only;
+  $("footer-kelola").hidden = data.read_only;
   $("scan-button").hidden = data.read_only;
   $("readonly-banner").hidden = !data.read_only;
   if (data.read_only) return;
@@ -537,7 +538,7 @@ function renderDiscovered(result, form) {
     syncTargetForm();
     selectTab("aset");
   }) }, "Tambahkan dan pindai");
-  box.replaceChildren(h("h3", {}, `Layanan di ${result.host}`), ...boxes, add);
+  box.replaceChildren(h("h4", {}, `Layanan di ${result.host}`), ...boxes, add);
 }
 
 $("target-form").addEventListener("submit", (event) => {
@@ -660,7 +661,13 @@ async function refresh() {
 
 syncTargetForm();
 selectTab(location.hash.slice(1) || "ringkasan");
-window.addEventListener("hashchange", () => selectTab(location.hash.slice(1)));
+// Only tab names switch tabs; other hashes (the skip link's #main) are page anchors.
+window.addEventListener("hashchange", () => {
+  const name = location.hash.slice(1);
+  if (!TABS.includes(name)) return;
+  selectTab(name);
+  scrollTo(0, 0);
+});
 refresh().catch((error) => {
   $("loading").textContent = "Data dashboard gagal dimuat. Muat ulang halaman, atau periksa apakah layanan Q-Shield berjalan.";
   showError(error.message);
