@@ -140,6 +140,15 @@ def latest_results() -> list[dict]:
     return [json.loads(row["document"]) for row in rows]
 
 
+def reset_scans() -> None:
+    """Forget scan history, benchmarks and gateway state; keep targets and settings."""
+    with connect() as db:
+        db.execute("DELETE FROM results")
+        db.execute("DELETE FROM scans")
+        db.execute("DELETE FROM benchmarks")
+        db.execute("UPDATE targets SET gateway_port = NULL, gateway_status = NULL")
+
+
 def save_benchmark(target_id: int, document: dict) -> None:
     with connect() as db:
         db.execute("INSERT INTO benchmarks (target_id, measured_at, document) VALUES (?, ?, ?) "

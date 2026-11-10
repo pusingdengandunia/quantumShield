@@ -50,7 +50,7 @@
       <header class="section-head">
         <p class="eyebrow">Ringkasan</p>
         <h2>Satu skor, langsung tahu posisi satuanmu.</h2>
-        <p class="lead">Skor naik setiap kali aset terlindungi hybrid post-quantum. Mulai dari risiko tertinggi, lalu ikuti tindakan berikutnya.</p>
+        <p class="lead">Skor naik saat scan mendeteksi aset sudah memakai kriptografi hybrid post-quantum. Mulai dari risiko tertinggi, lalu ikuti rekomendasi tindakan.</p>
       </header>
 
       <p class="empty" id="loading" role="status">Memuat hasil scan terakhir…</p>
@@ -59,6 +59,11 @@
         <p>Klik <strong>Jalankan scan</strong> untuk memetakan kriptografi asetmu, atau daftarkan target dulu di tab Kelola.</p>
       </section>
       <div id="summary-content" class="stack" hidden>
+        <section class="phish-alert" id="phish-summary" aria-labelledby="phish-summary-title" hidden>
+          <h3 id="phish-summary-title">Indikasi phishing terdeteksi</h3>
+          <p id="phish-summary-text"></p>
+          <a class="button" href="#aset">Periksa di tab Aset</a>
+        </section>
         <div class="hero-grid">
           <section class="card" aria-labelledby="hero-title">
             <h3 id="hero-title">Skor kesiapan kuantum satuan</h3>
@@ -80,7 +85,7 @@
             <ol class="top-list" id="top-risks"></ol>
           </section>
           <section class="card">
-            <h3>Tindakan berikutnya</h3>
+            <h3>Rekomendasi tindakan</h3>
             <ol class="top-list" id="next-actions"></ol>
           </section>
         </div>
@@ -93,13 +98,13 @@
       <section class="steps-section" aria-labelledby="steps-title">
         <header class="section-head">
           <p class="eyebrow">Cara kerja</p>
-          <h2 id="steps-title">Dari scan pertama sampai terbukti aman.</h2>
+          <h2 id="steps-title">Dari scan pertama sampai tahu langkah berikutnya.</h2>
         </header>
         <ol class="steps">
           <li><span class="step-number" aria-hidden="true">01</span><h3>Temukan</h3><p>Scanner membaca TLS, SSH, sertifikat, kode, dan konfigurasi setiap target di allowlist.</p></li>
           <li><span class="step-number" aria-hidden="true">02</span><h3>Nilai</h3><p>Tiap aset dapat skor risiko dan diuji dengan teorema Mosca, jadi kamu tahu mana yang mendesak.</p></li>
-          <li><span class="step-number" aria-hidden="true">03</span><h3>Lindungi</h3><p>Aset HTTPS dibungkus gateway hybrid <code>X25519MLKEM768</code> tanpa mengubah aplikasinya.</p></li>
-          <li><span class="step-number" aria-hidden="true">04</span><h3>Buktikan</h3><p>Scan ulang memverifikasi handshake hybrid, dan benchmark mengukur biayanya.</p></li>
+          <li><span class="step-number" aria-hidden="true">03</span><h3>Rekomendasikan</h3><p>Tiap aset mendapat rekomendasi migrasi sesuai prioritasnya, misalnya gateway hybrid <code>X25519MLKEM768</code>, update software, atau penggantian perangkat.</p></li>
+          <li><span class="step-number" aria-hidden="true">04</span><h3>Verifikasi</h3><p>Scan ulang memeriksa apakah handshake hybrid sudah berjalan. Benchmark mengukur beban kinerjanya: tambahan waktu dan data per handshake.</p></li>
         </ol>
       </section>
     </div>
@@ -112,6 +117,15 @@
       </header>
       <section class="card">
         <h3>Aset berdasarkan prioritas</h3>
+        <div class="priority-guide">
+          <p class="priority-guide-head"><span class="field-title">Arti prioritas</span><span data-tip-inline="prioritas"></span></p>
+          <ul class="priority-legend">
+            <li><span class="priority P1">P1</span> Berisiko tinggi, tangani segera</li>
+            <li><span class="priority">P2</span> Rentan, target 6 bulan</li>
+            <li><span class="priority">P3</span> Terlindungi sebagian, target 12 bulan</li>
+            <li><span class="priority">P4</span> Terlindungi, cukup dipantau</li>
+          </ul>
+        </div>
         <table id="assets" class="assets">
           <thead><tr><th>Prio</th><th>Aset</th><th>Key exchange</th><th>Autentikasi (PKI)</th><th class="risk-col">Risiko</th><th>Status</th></tr></thead>
           <tbody></tbody>
@@ -196,6 +210,14 @@
             <p class="muted">Berlaku pada scan berikutnya.</p>
           </form>
         </section>
+
+        <section class="card reset-card" aria-labelledby="reset-title">
+          <div>
+            <h3 id="reset-title">Reset hasil scan</h3>
+            <p class="muted">Hapus semua riwayat scan, hasil benchmark, dan gateway yang terpasang, lalu mulai lagi dari nol. Allowlist dan pengaturan skor tetap tersimpan.</p>
+          </div>
+          <button class="button danger" type="button" id="reset-button">Reset hasil scan</button>
+        </section>
       </div>
     </div>
   </main>
@@ -204,7 +226,7 @@
     <div class="footer-inner">
       <div class="footer-brand">
         <p class="brand-name">Kartika Q-Shield</p>
-        <p>Platform kesiapan kuantum untuk satuan TNI AD. Temukan kriptografi yang rentan, ukur risikonya, lalu lindungi tanpa mengubah aplikasi lama.</p>
+        <p>Platform kesiapan kuantum untuk satuan TNI AD. Temukan kriptografi yang rentan, ukur risikonya, lalu dapatkan rekomendasi migrasinya.</p>
       </div>
       <nav class="footer-col" aria-labelledby="footer-dashboard">
         <p class="footer-title" id="footer-dashboard">Dashboard</p>
