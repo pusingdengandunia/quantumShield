@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <a class="skip-link" href="#main">Lewati ke konten</a>
   <header class="top">
     <div class="top-inner">
       <div class="brand">
@@ -24,23 +25,24 @@
       </nav>
       <button class="button primary" id="scan-button" type="button">Jalankan scan</button>
     </div>
-    <div class="progress" id="progress" role="status" hidden>
-      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
-      <p id="progress-text"></p>
+    <div class="progress" id="progress" hidden>
+      <div class="progress-track" id="progress-track" role="progressbar" aria-label="Kemajuan scan" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="progress-fill"></div></div>
+      <p id="progress-text" role="status"></p>
     </div>
   </header>
 
-  <main>
+  <main id="main" tabindex="-1">
     <p class="banner" id="readonly-banner" hidden>Mode demo baca-saja. Data berasal dari lab tiruan. Untuk mencoba scan, jalankan <code>docker compose up</code>.</p>
     <p class="banner error" id="error" role="alert" hidden></p>
     <p class="banner good" id="notice" role="status" hidden></p>
 
     <div id="panel-ringkasan" role="tabpanel" aria-labelledby="tab-ringkasan" class="panel">
+      <p class="empty" id="loading" role="status">Memuat hasil scan terakhir…</p>
       <section class="empty" id="empty-state" hidden>
         <h2>Belum ada hasil scan</h2>
         <p>Jalankan scan untuk memetakan kriptografi aset, atau daftarkan target dulu di tab Kelola.</p>
       </section>
-      <div id="summary-content" class="stack">
+      <div id="summary-content" class="stack" hidden>
         <div class="hero-grid">
           <section class="card" aria-labelledby="hero-title">
             <h2 id="hero-title">Skor kesiapan kuantum satuan</h2>
@@ -104,7 +106,7 @@
               <option value="repo">Repo/folder kode</option>
             </select>
           </div>
-          <div class="field" data-tip="host" data-for="host"><div class="field-head"><label for="f-host">Host</label></div><input id="f-host" name="host" placeholder="mail.google.com" autocomplete="off"></div>
+          <div class="field" data-tip="host" data-for="host"><div class="field-head"><label for="f-host">Host</label></div><input id="f-host" name="host" placeholder="contoh: portal.satuan.example" autocomplete="off"></div>
           <div class="field" data-tip="port" data-for="port"><div class="field-head"><label for="f-port">Port</label></div><input id="f-port" name="port" type="number" min="1" max="65535" value="443"></div>
           <div class="field" data-tip="path" data-for="repo"><div class="field-head"><label for="f-path">Path</label></div><input id="f-path" name="path" placeholder="/scan/repo-dummy"></div>
           <div class="field" data-tip="sensitivitas"><div class="field-head"><label for="f-sens">Sensitivitas data</label></div><select id="f-sens" name="sensitivity"></select></div>
