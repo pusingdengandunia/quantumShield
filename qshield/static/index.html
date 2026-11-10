@@ -6,6 +6,7 @@
   <title>Kartika Q-Shield</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+  <script src="theme.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Lewati ke konten</a>
@@ -23,6 +24,10 @@
         <button type="button" role="tab" id="tab-aset" aria-controls="panel-aset">Aset</button>
         <button type="button" role="tab" id="tab-kelola" aria-controls="panel-kelola">Kelola</button>
       </nav>
+      <button class="button theme-button" id="theme-button" type="button" aria-pressed="false">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M13.5 10.2A6 6 0 0 1 5.8 2.5a6 6 0 1 0 7.7 7.7Z" fill="currentColor"/></svg>
+        <span class="theme-label">Mode gelap</span>
+      </button>
       <button class="button primary" id="scan-button" type="button">Jalankan scan</button>
     </div>
     <div class="progress" id="progress" hidden>

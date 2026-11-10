@@ -103,7 +103,12 @@ p { margin: 0; }
 .brand { display: flex; align-items: center; gap: 10px; margin-right: auto; min-width: 0; }
 .brand p { font-size: 12px; color: var(--text-secondary); }
 .tabs { display: flex; gap: 2px; order: 2; }
-#scan-button { order: 3; }
+#theme-button { order: 3; }
+#scan-button { order: 4; }
+/* One switch with a fixed name; aria-pressed says whether dark mode is on. */
+.theme-button { display: inline-flex; align-items: center; gap: 6px; }
+.theme-button svg { flex: none; }
+.theme-button[aria-pressed="true"] { background: var(--grid); border-color: var(--text-secondary); }
 .tabs button {
   font: inherit; font-size: 14px; color: var(--text-secondary); background: none; border: 0; border-radius: 6px;
   padding: 7px 14px; cursor: pointer;
@@ -303,6 +308,9 @@ form .button { justify-self: start; }
   .brand { width: 100%; margin-right: 0; }
   .tabs { order: 2; flex: 1; }
   .tabs button { flex: 1; padding: 7px 4px; }
+  /* Icon only on phones; the label stays for screen readers. */
+  .theme-button { padding: 7px 10px; }
+  .theme-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .card { padding: 16px; }
   .score { font-size: 52px; }
   .two-col { grid-template-columns: minmax(0, 1fr); }
