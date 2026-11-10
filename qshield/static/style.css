@@ -387,7 +387,7 @@ form .button { justify-self: start; }
 .phish-alert h4 { font-size: 16px; }
 .detail .phish-alert { margin: 12px 0 16px; }
 .phish-flag {
-  display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;
+  display: flex; width: fit-content; align-items: center; gap: 6px; margin-top: 6px;
   font-size: 14px; font-weight: 600; color: var(--critical-text);
 }
 .phish-flag .status-icon { background: var(--critical); color: #fff; }
@@ -398,8 +398,8 @@ form .button { justify-self: start; }
 .priority-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 15px; color: var(--text-secondary); }
 .priority-legend li { display: inline-flex; align-items: center; gap: 8px; }
 
-/* Reset: a full-width row under the Kelola cards, text left, button right. */
-.reset-card { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+/* Reset: a full-width row under the Kelola cards (outside their grid), text left, button right. */
+.reset-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
 .reset-card .muted { margin: 0; max-width: 70ch; }
 .button.danger { color: var(--critical-text); border-color: var(--critical); }
 .button.danger:hover { background: var(--critical); border-color: var(--critical); color: #fff; }
