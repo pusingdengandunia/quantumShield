@@ -9,3 +9,4 @@ temp/
 *.pem
 *.key
 .env
+.claude/
