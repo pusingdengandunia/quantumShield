@@ -12,24 +12,26 @@
   <a class="skip-link" href="#main">Lewati ke konten</a>
   <header class="top">
     <div class="top-inner">
-      <div class="brand">
+      <a class="brand" href="#ringkasan">
         <img src="favicon.svg" alt="" width="28" height="28">
-        <div>
-          <h1>Kartika Q-Shield</h1>
-          <p id="scanned-at">Belum ada scan</p>
-        </div>
-      </div>
+        <span class="brand-text">
+          <span class="brand-name">Kartika Q-Shield</span>
+          <span class="brand-sub" id="scanned-at">Belum ada scan</span>
+        </span>
+      </a>
       <nav class="tabs" role="tablist" aria-label="Bagian dashboard">
         <button type="button" role="tab" id="tab-ringkasan" aria-controls="panel-ringkasan">Ringkasan</button>
         <button type="button" role="tab" id="tab-aset" aria-controls="panel-aset">Aset</button>
         <button type="button" role="tab" id="tab-kelola" aria-controls="panel-kelola">Kelola</button>
       </nav>
-      <button class="button theme-button" id="theme-button" type="button" aria-pressed="false">
-        <svg class="icon-moon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M13.5 10.2A6 6 0 0 1 5.8 2.5a6 6 0 1 0 7.7 7.7Z" fill="currentColor"/></svg>
-        <svg class="icon-sun" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        <span class="sr-only">Mode gelap</span>
-      </button>
-      <button class="button primary" id="scan-button" type="button">Jalankan scan</button>
+      <div class="top-actions">
+        <button class="button theme-button" id="theme-button" type="button" aria-pressed="false">
+          <svg class="icon-moon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M13.5 10.2A6 6 0 0 1 5.8 2.5a6 6 0 1 0 7.7 7.7Z" fill="currentColor"/></svg>
+          <svg class="icon-sun" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span class="sr-only">Mode gelap</span>
+        </button>
+        <button class="button primary" id="scan-button" type="button">Jalankan scan</button>
+      </div>
     </div>
     <div class="progress" id="progress" hidden>
       <div class="progress-track" id="progress-track" role="progressbar" aria-label="Kemajuan scan" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill" id="progress-fill"></div></div>
@@ -38,20 +40,27 @@
   </header>
 
   <main id="main" tabindex="-1">
-    <p class="banner" id="readonly-banner" hidden>Mode demo baca-saja. Data berasal dari lab tiruan. Untuk mencoba scan, jalankan <code>docker compose up</code>.</p>
+    <h1 class="sr-only">Kartika Q-Shield</h1>
+    <p class="banner" id="readonly-banner" hidden>Kamu sedang melihat demo baca-saja. Datanya dari lab tiruan. Mau coba scan sendiri? Jalankan <code>docker compose up</code>.</p>
     <p class="banner error" id="error" role="alert" hidden></p>
     <p class="banner good" id="notice" role="status" hidden></p>
 
     <div id="panel-ringkasan" role="tabpanel" aria-labelledby="tab-ringkasan" class="panel">
+      <header class="section-head">
+        <p class="eyebrow">Ringkasan</p>
+        <h2>Satu skor, langsung tahu posisi satuanmu.</h2>
+        <p class="lead">Skor naik setiap kali aset terlindungi hybrid post-quantum. Mulai dari risiko tertinggi, lalu ikuti tindakan berikutnya.</p>
+      </header>
+
       <p class="empty" id="loading" role="status">Memuat hasil scan terakhir…</p>
       <section class="empty" id="empty-state" hidden>
-        <h2>Belum ada hasil scan</h2>
-        <p>Jalankan scan untuk memetakan kriptografi aset, atau daftarkan target dulu di tab Kelola.</p>
+        <h3>Belum ada hasil scan.</h3>
+        <p>Klik <strong>Jalankan scan</strong> untuk memetakan kriptografi asetmu, atau daftarkan target dulu di tab Kelola.</p>
       </section>
       <div id="summary-content" class="stack" hidden>
         <div class="hero-grid">
           <section class="card" aria-labelledby="hero-title">
-            <h2 id="hero-title">Skor kesiapan kuantum satuan</h2>
+            <h3 id="hero-title">Skor kesiapan kuantum satuan</h3>
             <p class="score"><span id="score">–</span><span class="score-max"> / 100</span></p>
             <p class="delta" id="delta"></p>
             <div class="status-bar" id="status-bar" role="img"></div>
@@ -66,11 +75,11 @@
         <div class="kpis" id="kpis"></div>
         <div class="two-col">
           <section class="card">
-            <h2>Risiko tertinggi</h2>
+            <h3>Risiko tertinggi</h3>
             <ol class="top-list" id="top-risks"></ol>
           </section>
           <section class="card">
-            <h2>Tindakan berikutnya</h2>
+            <h3>Tindakan berikutnya</h3>
             <ol class="top-list" id="next-actions"></ol>
           </section>
         </div>
@@ -79,19 +88,36 @@
           <a class="button" href="api/report.pdf" download>Laporan PDF</a>
         </div>
       </div>
+
+      <section class="steps-section" aria-labelledby="steps-title">
+        <header class="section-head">
+          <p class="eyebrow">Cara kerja</p>
+          <h2 id="steps-title">Dari scan pertama sampai terbukti aman.</h2>
+        </header>
+        <ol class="steps">
+          <li><span class="step-number" aria-hidden="true">01</span><h3>Temukan</h3><p>Scanner membaca TLS, SSH, sertifikat, kode, dan konfigurasi setiap target di allowlist.</p></li>
+          <li><span class="step-number" aria-hidden="true">02</span><h3>Nilai</h3><p>Tiap aset dapat skor risiko dan diuji dengan teorema Mosca, jadi kamu tahu mana yang mendesak.</p></li>
+          <li><span class="step-number" aria-hidden="true">03</span><h3>Lindungi</h3><p>Aset HTTPS dibungkus gateway hybrid <code>X25519MLKEM768</code> tanpa mengubah aplikasinya.</p></li>
+          <li><span class="step-number" aria-hidden="true">04</span><h3>Buktikan</h3><p>Scan ulang memverifikasi handshake hybrid, dan benchmark mengukur biayanya.</p></li>
+        </ol>
+      </section>
     </div>
 
-    <div id="panel-aset" role="tabpanel" aria-labelledby="tab-aset" class="panel stack" hidden>
+    <div id="panel-aset" role="tabpanel" aria-labelledby="tab-aset" class="panel" hidden>
+      <header class="section-head">
+        <p class="eyebrow">Aset</p>
+        <h2>Semua aset, dari yang paling mendesak.</h2>
+        <p class="lead">Klik nama aset untuk melihat alasan skornya, temuan, rantai PKI, dan tindakan yang bisa kamu ambil.</p>
+      </header>
       <section class="card">
-        <h2>Aset berdasarkan prioritas</h2>
-        <p class="muted">Pilih aset untuk melihat alasan skor, temuan, rantai PKI, dan tindakan.</p>
+        <h3>Aset berdasarkan prioritas</h3>
         <table id="assets" class="assets">
           <thead><tr><th>Prio</th><th>Aset</th><th>Key exchange</th><th>Autentikasi (PKI)</th><th class="risk-col">Risiko</th><th>Status</th></tr></thead>
           <tbody></tbody>
         </table>
       </section>
       <section class="card">
-        <h2>Roadmap migrasi</h2>
+        <h3>Roadmap migrasi</h3>
         <table id="roadmap" class="stacking">
           <thead><tr><th>Fase</th><th>Aset</th><th>Tindakan</th></tr></thead>
           <tbody></tbody>
@@ -99,72 +125,107 @@
       </section>
     </div>
 
-    <div id="panel-kelola" role="tabpanel" aria-labelledby="tab-kelola" class="panel manage" hidden>
-      <section class="card">
-        <h2>Daftarkan target</h2>
-        <form id="target-form" novalidate>
-          <div class="field" data-tip="nama" data-for="named"><div class="field-head"><label for="f-name">Nama</label></div><input id="f-name" name="name" maxlength="80"></div>
-          <div class="field" data-tip="jenis"><div class="field-head"><label for="f-kind">Jenis</label></div>
-            <select id="f-kind" name="kind">
-              <option value="server">Server (deteksi layanan)</option>
-              <option value="tls">Layanan TLS/HTTPS</option>
-              <option value="ssh">Server SSH</option>
-              <option value="repo">Repo/folder kode</option>
-            </select>
-          </div>
-          <div class="field" data-tip="host" data-for="host"><div class="field-head"><label for="f-host">Host</label></div><input id="f-host" name="host" placeholder="contoh: portal.satuan.example" autocomplete="off"></div>
-          <div class="field" data-tip="port" data-for="port"><div class="field-head"><label for="f-port">Port</label></div><input id="f-port" name="port" type="number" min="1" max="65535" value="443"></div>
-          <div class="field" data-tip="path" data-for="repo"><div class="field-head"><label for="f-path">Path</label></div><input id="f-path" name="path" placeholder="/scan/repo-dummy"></div>
-          <div class="field" data-tip="sensitivitas"><div class="field-head"><label for="f-sens">Sensitivitas data</label></div><select id="f-sens" name="sensitivity"></select></div>
-          <div class="field" data-tip="eksposur"><div class="field-head"><label for="f-exp">Eksposur</label></div><select id="f-exp" name="exposure"></select></div>
-          <div class="field" data-tip="migrasi"><div class="field-head"><label for="f-mig">Migrasi</label></div><select id="f-mig" name="migration"></select></div>
-          <div class="field check" data-tip="izin"><div class="field-head"><input type="checkbox" id="f-auth" name="authorized"><label for="f-auth">Saya berwenang memindai target ini.</label></div></div>
-          <button class="button primary" type="submit" id="target-submit">Deteksi layanan</button>
-        </form>
-        <div id="discovered" class="discovered" hidden></div>
-      </section>
+    <div id="panel-kelola" role="tabpanel" aria-labelledby="tab-kelola" class="panel" hidden>
+      <header class="section-head">
+        <p class="eyebrow">Kelola</p>
+        <h2>Daftarkan target, atur cara menilainya.</h2>
+        <p class="lead">Q-Shield hanya memindai target di allowlist. Pastikan kamu berwenang atas setiap target yang kamu tambahkan.</p>
+      </header>
+      <div class="manage">
+        <section class="card">
+          <h3>Daftarkan target</h3>
+          <form id="target-form" novalidate>
+            <div class="field" data-tip="nama" data-for="named"><div class="field-head"><label for="f-name">Nama</label></div><input id="f-name" name="name" maxlength="80"></div>
+            <div class="field" data-tip="jenis"><div class="field-head"><label for="f-kind">Jenis</label></div>
+              <select id="f-kind" name="kind">
+                <option value="server">Server (deteksi layanan)</option>
+                <option value="tls">Layanan TLS/HTTPS</option>
+                <option value="ssh">Server SSH</option>
+                <option value="repo">Repo/folder kode</option>
+              </select>
+            </div>
+            <div class="field" data-tip="host" data-for="host"><div class="field-head"><label for="f-host">Host</label></div><input id="f-host" name="host" placeholder="contoh: portal.satuan.example" autocomplete="off"></div>
+            <div class="field" data-tip="port" data-for="port"><div class="field-head"><label for="f-port">Port</label></div><input id="f-port" name="port" type="number" min="1" max="65535" value="443"></div>
+            <div class="field" data-tip="path" data-for="repo"><div class="field-head"><label for="f-path">Path</label></div><input id="f-path" name="path" placeholder="/scan/repo-dummy"></div>
+            <div class="field" data-tip="sensitivitas"><div class="field-head"><label for="f-sens">Sensitivitas data</label></div><select id="f-sens" name="sensitivity"></select></div>
+            <div class="field" data-tip="eksposur"><div class="field-head"><label for="f-exp">Eksposur</label></div><select id="f-exp" name="exposure"></select></div>
+            <div class="field" data-tip="migrasi"><div class="field-head"><label for="f-mig">Migrasi</label></div><select id="f-mig" name="migration"></select></div>
+            <div class="field check" data-tip="izin"><div class="field-head"><input type="checkbox" id="f-auth" name="authorized"><label for="f-auth">Saya berwenang memindai target ini.</label></div></div>
+            <button class="button primary" type="submit" id="target-submit">Deteksi layanan</button>
+          </form>
+          <div id="discovered" class="discovered" hidden></div>
+        </section>
 
-      <section class="card">
-        <h2>Allowlist</h2>
-        <ul class="targets" id="targets"></ul>
-      </section>
+        <section class="card">
+          <h3>Allowlist</h3>
+          <ul class="targets" id="targets"></ul>
+        </section>
 
-      <section class="card">
-        <h2>Pengaturan skor</h2>
-        <form id="settings-form">
-          <div class="field-group">
-            <div class="field-head group-head"><span class="field-title">Bobot konteks</span><span data-tip-inline="bobot"></span></div>
-            <div class="weights">
-              <div class="field"><label for="s-wa">Dasar A</label><input id="s-wa" name="wA" type="number" step="0.05" min="0" max="1" required></div>
-              <div class="field"><label for="s-ws">S</label><input id="s-ws" name="wS" type="number" step="0.05" min="0" max="1" required></div>
-              <div class="field"><label for="s-we">E</label><input id="s-we" name="wE" type="number" step="0.05" min="0" max="1" required></div>
-              <div class="field"><label for="s-wm">M</label><input id="s-wm" name="wM" type="number" step="0.05" min="0" max="1" required></div>
+        <section class="card">
+          <h3>Pengaturan skor</h3>
+          <form id="settings-form">
+            <div class="field-group">
+              <div class="field-head group-head"><span class="field-title">Bobot konteks</span><span data-tip-inline="bobot"></span></div>
+              <div class="weights">
+                <div class="field"><label for="s-wa">Dasar A</label><input id="s-wa" name="wA" type="number" step="0.05" min="0" max="1" required></div>
+                <div class="field"><label for="s-ws">S</label><input id="s-ws" name="wS" type="number" step="0.05" min="0" max="1" required></div>
+                <div class="field"><label for="s-we">E</label><input id="s-we" name="wE" type="number" step="0.05" min="0" max="1" required></div>
+                <div class="field"><label for="s-wm">M</label><input id="s-wm" name="wM" type="number" step="0.05" min="0" max="1" required></div>
+              </div>
             </div>
-          </div>
-          <div class="field" data-tip="tahun"><div class="field-head"><label for="s-year">Tahun komputer kuantum relevan (Z)</label></div><input id="s-year" name="quantum_year" type="number" min="2026" max="2100" required></div>
-          <div class="field-group">
-            <div class="field-head group-head"><span class="field-title">Masa data harus rahasia (X, tahun)</span><span data-tip-inline="x"></span></div>
-            <div class="weights three">
-              <div class="field"><label for="s-xr">Rahasia</label><input id="s-xr" name="x_rahasia" type="number" min="0" max="100" required></div>
-              <div class="field"><label for="s-xi">Internal</label><input id="s-xi" name="x_internal" type="number" min="0" max="100" required></div>
-              <div class="field"><label for="s-xp">Publik</label><input id="s-xp" name="x_publik" type="number" min="0" max="100" required></div>
+            <div class="field" data-tip="tahun"><div class="field-head"><label for="s-year">Tahun komputer kuantum relevan (Z)</label></div><input id="s-year" name="quantum_year" type="number" min="2026" max="2100" required></div>
+            <div class="field-group">
+              <div class="field-head group-head"><span class="field-title">Masa data harus rahasia (X, tahun)</span><span data-tip-inline="x"></span></div>
+              <div class="weights three">
+                <div class="field"><label for="s-xr">Rahasia</label><input id="s-xr" name="x_rahasia" type="number" min="0" max="100" required></div>
+                <div class="field"><label for="s-xi">Internal</label><input id="s-xi" name="x_internal" type="number" min="0" max="100" required></div>
+                <div class="field"><label for="s-xp">Publik</label><input id="s-xp" name="x_publik" type="number" min="0" max="100" required></div>
+              </div>
             </div>
-          </div>
-          <div class="field-group">
-            <div class="field-head group-head"><span class="field-title">Lama migrasi (Y, tahun)</span><span data-tip-inline="y"></span></div>
-            <div class="weights three">
-              <div class="field"><label for="s-yg">Gateway</label><input id="s-yg" name="y_gateway" type="number" min="0" max="100" required></div>
-              <div class="field"><label for="s-yu">Update</label><input id="s-yu" name="y_update" type="number" min="0" max="100" required></div>
-              <div class="field"><label for="s-yl">Legacy</label><input id="s-yl" name="y_legacy" type="number" min="0" max="100" required></div>
+            <div class="field-group">
+              <div class="field-head group-head"><span class="field-title">Lama migrasi (Y, tahun)</span><span data-tip-inline="y"></span></div>
+              <div class="weights three">
+                <div class="field"><label for="s-yg">Gateway</label><input id="s-yg" name="y_gateway" type="number" min="0" max="100" required></div>
+                <div class="field"><label for="s-yu">Update</label><input id="s-yu" name="y_update" type="number" min="0" max="100" required></div>
+                <div class="field"><label for="s-yl">Legacy</label><input id="s-yl" name="y_legacy" type="number" min="0" max="100" required></div>
+              </div>
             </div>
-          </div>
-          <div class="field" data-tip="sumber"><div class="field-head"><label for="s-src">Sumber nilai X dan Y</label></div><input id="s-src" name="mosca_source" maxlength="200" placeholder="Kosong berarti asumsi awal"></div>
-          <button class="button" type="submit">Simpan</button>
-          <p class="muted">Berlaku pada scan berikutnya.</p>
-        </form>
-      </section>
+            <div class="field" data-tip="sumber"><div class="field-head"><label for="s-src">Sumber nilai X dan Y</label></div><input id="s-src" name="mosca_source" maxlength="200" placeholder="Kosong berarti asumsi awal"></div>
+            <button class="button" type="submit">Simpan</button>
+            <p class="muted">Berlaku pada scan berikutnya.</p>
+          </form>
+        </section>
+      </div>
     </div>
   </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <p class="brand-name">Kartika Q-Shield</p>
+        <p>Platform kesiapan kuantum untuk satuan TNI AD. Temukan kriptografi yang rentan, ukur risikonya, lalu lindungi tanpa mengubah aplikasi lama.</p>
+      </div>
+      <nav class="footer-col" aria-labelledby="footer-dashboard">
+        <p class="footer-title" id="footer-dashboard">Dashboard</p>
+        <ul>
+          <li><a href="#ringkasan">Ringkasan</a></li>
+          <li><a href="#aset">Aset</a></li>
+          <li id="footer-kelola"><a href="#kelola">Kelola</a></li>
+        </ul>
+      </nav>
+      <nav class="footer-col" aria-labelledby="footer-ekspor">
+        <p class="footer-title" id="footer-ekspor">Ekspor</p>
+        <ul>
+          <li><a href="api/cbom" download>Ekspor CBOM</a></li>
+          <li><a href="api/report.pdf" download>Laporan PDF</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <p>Kartika Cyber Hackathon 2026 · Dukungan Teknologi</p>
+      <p>Pindai hanya sistem yang izinnya kamu pegang.</p>
+    </div>
+  </footer>
   <script src="app.js"></script>
 </body>
 </html>
